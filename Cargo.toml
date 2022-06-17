@@ -1,0 +1,11 @@
+[package]
+name = "rockysmithereens"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = ["crates/*"]
+
+[dependencies]
+bevy = "0.7.0"
+rockysmithereens_parser = { path = "crates/rockysmithereens_parser" }
