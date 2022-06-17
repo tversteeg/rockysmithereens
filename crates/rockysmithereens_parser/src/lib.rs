@@ -1,7 +1,7 @@
 use psarc::PlaystationArchive;
 
 pub fn parse(file: &[u8]) {
-    let archive = PlaystationArchive::parse(file);
+    let archive = PlaystationArchive::parse(file).unwrap();
 }
 
 #[cfg(test)]
