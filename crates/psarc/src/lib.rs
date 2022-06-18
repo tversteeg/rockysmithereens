@@ -1,5 +1,11 @@
 mod error;
+mod utils;
 
+use aes::{
+    cipher::{AsyncStreamCipher, KeyIvInit},
+    Aes256,
+};
+use cfb_mode::Decryptor;
 pub use error::{ArchiveReadError, Result};
 use nom::{
     bytes::complete::take,
@@ -8,6 +14,11 @@ use nom::{
     IResult,
 };
 use semver::Version;
+
+/// Rocksmith decryption primitives.
+const ARC_KEY: [u8; 32] =
+    hex_literal::hex!("C53DB23870A1A2F71CAE64061FDD0E1157309DC85204D4C5BFDF25090DF2572C");
+const ARC_IV: [u8; 16] = hex_literal::hex!("E915AA018FEF71FC508132E4BB4CEB42");
 
 /// Parsed Playstation archive file.
 #[derive(Debug, Clone)]
@@ -52,6 +63,7 @@ impl<'a> PlaystationArchive<'a> {
         dbg!(table_of_content.file_entries(archive_flags));
         dbg!(table_of_content.length);
         dbg!(table_of_content.entry_size);
+        todo!();
 
         Ok(Self {
             version,
@@ -144,12 +156,12 @@ impl<'a> TableOfContent<'a> {
     /// Get all file entries.
     pub fn file_entries(&self, flags: ArchiveFlags) -> Result<Vec<FileEntry>> {
         // If the archive flag is set to encrypted we'll have to decrypt the data
-        let mut i = self.decrypt(flags)?.as_slice();
+        let mut i = self.decrypt(flags)?;
 
         (0..self.entry_count)
             .map(|_| {
-                let file_entry;
-                (i, file_entry) = parse_file_entry(i)?;
+                let (i_ref, file_entry) = parse_file_entry(&i)?;
+                i = i_ref.into();
 
                 Ok(file_entry)
             })
@@ -159,17 +171,22 @@ impl<'a> TableOfContent<'a> {
     /// Decrypt the TOC if the archive flag is set to encrypted.
     pub fn decrypt(&self, flags: ArchiveFlags) -> Result<Vec<u8>> {
         // Skip the first bytes that have already been parsed
-        let (i, _) = take(4usize)(self.data)?;
+        let (i, _) = take(8usize)(self.data)?;
 
         // Take the exact bytes for the TOS
-        let (_, bytes) = take(self.length)(self.data)?;
+        let (_, bytes) = context("table of content bytes", take(self.length))(i)?;
+        let mut bytes = bytes.to_vec();
+
+        // Decrypt the TOS if the Rocksmith encryption flags have been set
 
         if flags == ArchiveFlags::Encrypted {
-            Ok(bytes.to_vec())
-        } else {
             // Decrypt the TOS
-            todo!()
+            let decryptor = Decryptor::<Aes256>::new(&ARC_KEY.into(), &ARC_IV.into());
+
+            decryptor.decrypt(&mut bytes);
         }
+
+        Ok(bytes)
     }
 }
 
@@ -234,8 +251,9 @@ fn parse_file_entry<'a>(i: &'a [u8]) -> IResult<&'a [u8], FileEntry, VerboseErro
     let name_digest = name_digest_block.to_be_bytes();
 
     let (i, index_list_size) = context("file entry index list size", be_u32)(i)?;
-    let (i, length) = context("file entry length", be_u64)(i)?;
-    let (i, offset) = context("file entry offset", be_u64)(i)?;
+
+    let (i, length) = context("file entry length", utils::be_u40)(i)?;
+    let (i, offset) = context("file entry offset", utils::be_u40)(i)?;
 
     let file_entry = FileEntry {
         name_digest,
@@ -245,13 +263,4 @@ fn parse_file_entry<'a>(i: &'a [u8]) -> IResult<&'a [u8], FileEntry, VerboseErro
     };
 
     Ok((i, file_entry))
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
 }
