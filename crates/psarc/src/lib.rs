@@ -1,15 +1,22 @@
 mod error;
 mod utils;
 
+use std::{
+    fmt::{Debug, Formatter},
+    io::Read,
+};
+
 use aes::{
     cipher::{AsyncStreamCipher, KeyIvInit},
     Aes256,
 };
 use cfb_mode::Decryptor;
 pub use error::{ArchiveReadError, Result};
+use flate2::read::ZlibDecoder;
 use nom::{
     bytes::complete::take,
     error::{context, VerboseError},
+    multi::count,
     number::complete::{be_u128, be_u16, be_u32, be_u64},
     IResult,
 };
@@ -21,20 +28,22 @@ const ARC_KEY: [u8; 32] =
 const ARC_IV: [u8; 16] = hex_literal::hex!("E915AA018FEF71FC508132E4BB4CEB42");
 
 /// Parsed Playstation archive file.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct PlaystationArchive<'a> {
     /// Supported version of this archive format.
     version: Version,
     /// How the data is compressed.
     compression_type: CompressionType,
-    /// Metadata for the archive.
-    table_of_content: TableOfContent<'a>,
+    /// Files in the archive.
+    file_entries: Vec<FileEntry>,
     /// How big the file block is.
     block_size: BlockSize,
     /// The actual file data.
     data: &'a [u8],
     /// How the paths of the archive are formatted.
     archive_flags: ArchiveFlags,
+    /// Sizes of the blocks.
+    block_sizes: Vec<u16>,
 }
 
 impl<'a> PlaystationArchive<'a> {
@@ -60,19 +69,112 @@ impl<'a> PlaystationArchive<'a> {
         let (i, archive_flags_value) = parse_archive_flags(i)?;
         let archive_flags = ArchiveFlags::try_from_u32(archive_flags_value)?;
 
-        dbg!(table_of_content.file_entries(archive_flags));
-        dbg!(table_of_content.length);
-        dbg!(table_of_content.entry_size);
-        todo!();
+        // Get all file entries from the table of content
+        let file_entries = table_of_content.file_entries(archive_flags)?;
+        // Skip the file entries part
+        let i = &i[table_of_content.size() as usize..];
 
-        Ok(Self {
+        // Calculate the amount of block sizes based on the size of the table of content
+        let num_blocks = (table_of_content.length - table_of_content.size()) / 2;
+        assert_eq!(
+            table_of_content.length,
+            num_blocks * 2 + table_of_content.size()
+        );
+        let (_, block_sizes) = parse_block_sizes(i, num_blocks as usize)?;
+
+        let mut this = Self {
             version,
             compression_type,
-            table_of_content,
+            file_entries,
             block_size,
-            data: i,
+            data: file,
             archive_flags,
+            block_sizes,
+        };
+
+        this.parse_manifest()?;
+
+        Ok(this)
+    }
+
+    /// Fill the entries with the lines from the manifest.
+    pub fn parse_manifest(&mut self) -> Result<()> {
+        let bytes = self.read_file(0)?;
+        let lines = String::from_utf8(bytes).map_err(|_| ArchiveReadError::Corrupt)?;
+
+        // Convert the lines to a vector of strings
+        std::iter::once("manifest.txt")
+            .chain(lines.lines())
+            .enumerate()
+            .for_each(|(i, line)| self.file_entries[i].path = line.to_string());
+
+        Ok(())
+    }
+
+    /// Read a file.
+    pub fn read_file(&self, file_index: usize) -> Result<Vec<u8>> {
+        let entry = self
+            .file_entries
+            .get(file_index)
+            .ok_or(ArchiveReadError::FileDoesNotExist)?;
+
+        Ok(match self.compression_type {
+            CompressionType::None => self.data
+                [entry.offset as usize..entry.offset as usize + entry.length as usize]
+                .to_vec(),
+            CompressionType::Zlib => {
+                let mut result = Vec::new();
+                let mut i = 0;
+                while result.len() < entry.length as usize {
+                    // Get the block size from the blocks
+                    let block_length = self
+                        .block_sizes
+                        .get(entry.index_list_size as usize + i)
+                        .unwrap_or_else(|| &0);
+
+                    // Decrypt the blocks
+                    let bytes = if *block_length == 0 {
+                        // If there's no block sizes available anymore use the default value
+                        &self.data[entry.offset as usize
+                            ..entry.offset as usize + BlockSize::U16.to_u32() as usize]
+                    } else {
+                        &self.data
+                            [entry.offset as usize..entry.offset as usize + *block_length as usize]
+                    };
+
+                    let mut decoder = ZlibDecoder::new(bytes);
+                    let mut chunk = Vec::new();
+                    match decoder.read_to_end(&mut chunk) {
+                        Ok(read) => {
+                            if read == 0 {
+                                result.append(&mut bytes.to_vec())
+                            } else {
+                                result.append(&mut chunk)
+                            }
+                        }
+                        // Encryption failed, just append the raw bytes
+                        Err(_) => result.append(&mut bytes.to_vec()),
+                    };
+
+                    i += 1;
+                }
+
+                result
+            }
+            CompressionType::Lzma => todo!(),
         })
+    }
+}
+
+impl<'a> Debug for PlaystationArchive<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PlaystationArchive")
+            .field("version", &self.version)
+            .field("compression_type", &self.compression_type)
+            .field("file_entries", &self.file_entries)
+            .field("block_size", &self.block_size)
+            .field("archive_flags", &self.archive_flags)
+            .finish()
     }
 }
 
@@ -141,6 +243,15 @@ impl BlockSize {
             _ => Err(ArchiveReadError::Corrupt),
         }
     }
+
+    /// Convert the blocksize to it's number representation.
+    pub fn to_u32(&self) -> u32 {
+        match self {
+            BlockSize::U16 => 65536,
+            BlockSize::U24 => 16777216,
+            BlockSize::U32 => 4294967295,
+        }
+    }
 }
 
 /// Archive table of content data.
@@ -174,7 +285,7 @@ impl<'a> TableOfContent<'a> {
         let (i, _) = take(8usize)(self.data)?;
 
         // Take the exact bytes for the TOS
-        let (_, bytes) = context("table of content bytes", take(self.length))(i)?;
+        let (_, bytes) = context("table of content bytes", take(self.size()))(i)?;
         let mut bytes = bytes.to_vec();
 
         // Decrypt the TOS if the Rocksmith encryption flags have been set
@@ -188,15 +299,34 @@ impl<'a> TableOfContent<'a> {
 
         Ok(bytes)
     }
+
+    /// Get the true amount of bytes for the TOC.
+    pub fn size(&self) -> u32 {
+        self.entry_size * self.entry_count
+    }
 }
 
 /// Single file entry in the archive.
-#[derive(Debug)]
+#[derive(Clone)]
 struct FileEntry {
     name_digest: [u8; 16],
+    /// Will be set after manifest is parsed.
+    path: String,
+    /// Index in the block list size.
     index_list_size: u32,
     length: u64,
     offset: u64,
+}
+
+impl Debug for FileEntry {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FileEntry")
+            .field("path", &self.path)
+            .field("index_list_size", &self.index_list_size)
+            .field("length", &self.length)
+            .field("offset", &self.offset)
+            .finish()
+    }
 }
 
 /// Parse the magic number at the beginning of the header.
@@ -260,7 +390,16 @@ fn parse_file_entry<'a>(i: &'a [u8]) -> IResult<&'a [u8], FileEntry, VerboseErro
         index_list_size,
         length,
         offset,
+        path: String::new(),
     };
 
     Ok((i, file_entry))
+}
+
+/// Parse block sizes.
+fn parse_block_sizes<'a>(
+    i: &'a [u8],
+    num_blocks: usize,
+) -> IResult<&'a [u8], Vec<u16>, VerboseError<&'a [u8]>> {
+    context("block_sizes", count(be_u16, num_blocks))(i)
 }
