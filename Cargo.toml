@@ -7,5 +7,17 @@ edition = "2021"
 members = ["crates/*"]
 
 [dependencies]
+anyhow = "1.0.58"
 bevy = "0.7.0"
+bevy_egui = "0.14.0"
+clap = { version = "3.2.5", features = ["derive"] }
+rfd = "0.9.1"
 rockysmithereens_parser = { path = "crates/rockysmithereens_parser" }
+
+# Don't make debug builds painfully slow
+[profile.dev]
+opt-level = 1
+
+# Always run release versions of slow crates
+[profile.dev.package."*"]
+opt-level = 3

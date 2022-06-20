@@ -16,6 +16,8 @@ pub enum ArchiveReadError {
     Corrupt,
     #[error("file does not exist")]
     FileDoesNotExist,
+    #[error("path not found: {0}")]
+    PathNotFound(String),
     #[error("parsing error")]
     Nom(String),
 }
