@@ -1,18 +1,6 @@
-[package]
-name = "rockysmithereens"
-version = "0.1.0"
-edition = "2021"
-
 [workspace]
-members = ["crates/*"]
-
-[dependencies]
-anyhow = "1.0.58"
-bevy = "0.7.0"
-bevy_egui = "0.14.0"
-clap = { version = "3.2.5", features = ["derive"] }
-rfd = "0.9.1"
-rockysmithereens_parser = { path = "crates/rockysmithereens_parser" }
+members = ["rockysmithereens", "crates/*", "tools/*"]
+default-members = ["rockysmithereens", "tools/psarc_extract"]
 
 # Don't make debug builds painfully slow
 [profile.dev]

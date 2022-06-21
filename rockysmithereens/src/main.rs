@@ -2,6 +2,8 @@ mod asset;
 mod event;
 mod player;
 
+use std::path::PathBuf;
+
 use asset::{RocksmithAsset, RocksmithAssetLoader};
 use bevy::{
     math::Vec3,
@@ -16,7 +18,7 @@ use bevy_egui::{
     egui::{CentralPanel, Window},
     EguiContext, EguiPlugin,
 };
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use event::StartEvent;
 use rfd::FileDialog;
 
@@ -24,11 +26,11 @@ use rockysmithereens_parser::SongFile;
 
 /// Command line arguments.
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
+#[clap(author, version, about, long_about = None, propagate_version = true)]
 struct Cli {
     /// Path to a Rocksmith '*.psarc' file.
     #[clap(value_parser)]
-    path: Option<String>,
+    path: Option<PathBuf>,
 }
 
 /// Game state.
@@ -66,7 +68,7 @@ fn setup(
     let cli = Cli::parse();
     // Load the asset if set
     if let Some(path) = cli.path {
-        state.handle = asset_server.load::<RocksmithAsset, _>(&path);
+        state.handle = asset_server.load::<RocksmithAsset, _>(&*path);
     }
 
     // plane

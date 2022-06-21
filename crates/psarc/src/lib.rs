@@ -12,7 +12,7 @@ use aes::{
 };
 use cfb_mode::Decryptor;
 pub use error::{ArchiveReadError, Result};
-use flate2::bufread::ZlibDecoder;
+use flate2::read::ZlibDecoder;
 use nom::{
     branch::alt,
     bytes::complete::{take, take_till},
@@ -50,6 +50,8 @@ pub struct PlaystationArchive {
 
 impl PlaystationArchive {
     pub fn parse(file: &[u8]) -> Result<Self> {
+        log::debug!("parsing psarc file of {} bytes", file.len());
+
         let (i, magic) = parse_magic(file)?;
         if !magic {
             return Err(ArchiveReadError::UnrecognizedFile);
@@ -65,8 +67,12 @@ impl PlaystationArchive {
 
         let (i, table_of_content) = parse_toc(i)?;
 
+        log::trace!("got {} entries", table_of_content.entry_count);
+
         let (i, block_size_value) = parse_block_size(i)?;
         let block_size = BlockSize::try_from_u32(block_size_value)?;
+
+        log::trace!("got block size of {}", block_size.to_u32());
 
         let (_, archive_flags_value) = parse_archive_flags(i)?;
         let archive_flags = ArchiveFlags::try_from_u32(archive_flags_value)?;
@@ -82,6 +88,8 @@ impl PlaystationArchive {
         let num_blocks = (table_of_content.length - blocks_offset) / 2;
         let (_, block_sizes) = parse_block_sizes(i, num_blocks as usize)?;
 
+        log::trace!("got {} block sizes", block_sizes.len());
+
         let mut this = Self {
             version,
             compression_type,
@@ -92,7 +100,11 @@ impl PlaystationArchive {
             block_sizes,
         };
 
+        this.calculate_file_entry_sizes()?;
+
         this.parse_manifest()?;
+
+        log::debug!("file succesfully parsed");
 
         Ok(this)
     }
@@ -104,93 +116,103 @@ impl PlaystationArchive {
             .get(file_index)
             .ok_or(ArchiveReadError::FileDoesNotExist)?;
 
-        Ok(match self.compression_type {
-            CompressionType::None => self.data
+        if !entry.path.is_empty() {
+            log::debug!("reading file '{}'", entry.path);
+        }
+
+        // Return the raw bytes when no compression is expected
+        if self.compression_type == CompressionType::None
+            || entry.input_length == entry.length as usize
+        {
+            return Ok(self.data
                 [entry.offset as usize..entry.offset as usize + entry.length as usize]
-                .to_vec(),
-            CompressionType::Zlib => {
-                let mut result = Cursor::new(Vec::with_capacity(entry.length as usize));
+                .to_vec());
+        }
 
-                let block_start = &self.data[entry.offset as usize..];
+        // We don't support this compression type yet
+        if self.compression_type == CompressionType::Lzma {
+            todo!();
+        }
 
-                let mut block_index = 0;
-                let mut chunk = block_start;
-                while result.position() < entry.length {
-                    // Get the block size from the blocks
-                    let block_length = self
-                        .block_sizes
-                        .get(entry.index_list_size as usize + block_index)
-                        .unwrap_or_else(|| &0);
+        // Setup a cursor that will write the result into the vector
+        let mut result = Cursor::new(Vec::with_capacity(entry.length as usize));
 
-                    // Decrypt the blocks
-                    if *block_length == 0 {
-                        // If there's no block sizes available anymore use the default value
-                        let (i, bytes) = context(
-                            "raw block",
-                            alt((
-                                context("block size", take(self.block_size.to_u32())),
-                                context("rest of the file", rest),
-                            )),
-                        )(chunk)?;
-                        chunk = i;
+        // Get a slice which will be data for this entry
+        let block_start =
+            &self.data[entry.offset as usize..entry.offset as usize + entry.input_length];
 
-                        result.write(bytes).map_err(|_| ArchiveReadError::Corrupt)?;
-                    } else if chunk.len() >= 2 {
-                        // Try to find the magic bytes denoting the block as zlib compressed
-                        let (_, zlib_magic) = context("zlib magic", be_u16)(chunk)?;
-                        if zlib_magic == 0x78DA || zlib_magic == 0x7801 {
-                            // Take a slice the size of the block from the file
-                            let (_, bytes) = context(
-                                "compressed block",
-                                alt((
-                                    context("block size", take(self.block_size.to_u32())),
-                                    context("rest of the file", rest),
-                                )),
-                            )(chunk)?;
+        // Increment the entry in the block list
+        let mut block_index = entry.index_list_size as usize;
 
-                            // Decode if compressed
-                            let mut decoder = ZlibDecoder::new(bytes);
-                            std::io::copy(&mut decoder, &mut result)
-                                .map_err(|_| ArchiveReadError::Corrupt)?;
+        let mut chunk = block_start;
+        while result.position() < entry.length {
+            // Get the block size from the blocks
+            let block_length = self.block_sizes.get(block_index).unwrap_or_else(|| &0);
 
-                            // Move the chunk further by how many bytes the decoder read
-                            chunk = &chunk[decoder.total_in() as usize..];
-                        } else {
-                            // No zlib magic header found, parse as raw bytes
+            // Decrypt the blocks
+            if *block_length == 0 {
+                log::trace!("parsing uncompressed block {}", block_index);
 
-                            // Take a slice the size of the block from the file
-                            let (i, bytes) = context(
-                                "raw block",
-                                alt((
-                                    context("block size", take(entry.length - result.position())),
-                                    context("rest of the file", rest),
-                                )),
-                            )(chunk)?;
-                            chunk = i;
+                todo!()
+            } else {
+                // Try to find the magic bytes denoting the block as zlib compressed
+                let zlib_magic = if chunk.len() >= 2 {
+                    context("zlib magic", be_u16)(chunk)?.1
+                } else {
+                    // This value will always trigger the rest of the bytes to be copied
+                    0
+                };
 
-                            result.write(bytes).map_err(|_| ArchiveReadError::Corrupt)?;
-                        }
-                    } else {
-                        // Remaining chunk is only 1 or 2 bytes
-                        result.write(chunk).map_err(|_| ArchiveReadError::Corrupt)?;
-                    }
+                if zlib_magic == 0x78DA || zlib_magic == 0x7801 {
+                    log::trace!("parsing compressed block {}", block_index,);
 
-                    block_index += 1;
+                    // Decode if compressed
+                    let mut decoder = ZlibDecoder::new(chunk);
+                    std::io::copy(&mut decoder, &mut result)
+                        .map_err(|_| ArchiveReadError::Corrupt)?;
+
+                    // Move the chunk further by how many bytes the decoder read
+                    chunk = &chunk[decoder.total_in() as usize..];
+                } else {
+                    log::trace!(
+                        "found magic value 0x{:04x}, so putting remaining chunk of {} bytes uncompressed into buffer",
+                        zlib_magic,
+                        chunk.len(),
+                    );
+
+                    // Write the rest
+                    result
+                        .write(&chunk)
+                        .map_err(|_| ArchiveReadError::Corrupt)?;
+
+                    // Everything has been written so we are done with this loop
+                    break;
                 }
-
-                let string = result.into_inner();
-                if string.len() != entry.length as usize {
-                    return Err(ArchiveReadError::Corrupt);
-                }
-
-                string
             }
-            CompressionType::Lzma => todo!(),
-        })
+
+            block_index += 1;
+        }
+
+        let string = result.into_inner();
+
+        log::trace!(
+            "{} block(s) read of a total of {} bytes",
+            block_index,
+            string.len()
+        );
+
+        // Verify the result size
+        if string.len() != entry.length as usize {
+            Err(ArchiveReadError::Corrupt)
+        } else {
+            Ok(string)
+        }
     }
 
     /// Read file as a string based on the Rocksmith path.
     pub fn read_rs_file(&self, path: &str, extension: &str) -> Result<Vec<u8>> {
+        log::debug!("reading file with rs path '{}'", path);
+
         let searchable_path = format!(
             "{}.{}",
             path.split(':').last().expect("malformed path"),
@@ -213,6 +235,15 @@ impl PlaystationArchive {
     pub fn read_rs_file_as_string(&self, path: &str, extension: &str) -> Result<String> {
         let bytes = self.read_rs_file(path, extension)?;
         String::from_utf8(bytes).map_err(|_| ArchiveReadError::Corrupt)
+    }
+
+    /// Get the index for a file path.
+    pub fn index_for_path(&self, path: &str) -> Option<usize> {
+        self.file_entries
+            .iter()
+            .enumerate()
+            .find(|(_, entry)| entry.path == path)
+            .map(|(i, _)| i)
     }
 
     /// Get the index for a file path.
@@ -247,11 +278,38 @@ impl PlaystationArchive {
 
     /// Fill the entries with the lines from the manifest.
     fn parse_manifest(&mut self) -> Result<()> {
+        log::debug!("reading manifest");
+
         // Convert the lines to a vector of strings
         std::iter::once("manifest.txt")
             .chain(self.read_file_as_string(0)?.lines())
             .enumerate()
             .for_each(|(i, line)| self.file_entries[i].path = line.to_string());
+
+        Ok(())
+    }
+
+    /// Fill the file entry sizes with the calculated total size.
+    pub fn calculate_file_entry_sizes(&mut self) -> Result<()> {
+        // Calculate the input lengths for the every but the last item
+        let next_offsets = self
+            .file_entries
+            .iter()
+            .skip(1)
+            .map(|entry| entry.offset)
+            .collect::<Vec<_>>();
+
+        self.file_entries
+            .iter_mut()
+            .zip(next_offsets)
+            .for_each(|(mut entry, next_offset)| {
+                entry.input_length = (next_offset - entry.offset) as usize;
+            });
+
+        // Calculate the input length for the last item
+        if let Some(mut last_entry) = self.file_entries.last_mut() {
+            last_entry.input_length = self.data.len() - last_entry.offset as usize;
+        }
 
         Ok(())
     }
@@ -271,7 +329,7 @@ impl Debug for PlaystationArchive {
 }
 
 /// How the archive is compressed.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CompressionType {
     None,
     Zlib,
@@ -409,6 +467,8 @@ struct FileEntry {
     length: u64,
     /// Byte offset in whole file.
     offset: u64,
+    /// Total bytes of the whole file, will be filled when the block sizes are known.
+    input_length: usize,
 }
 
 impl Debug for FileEntry {
@@ -418,6 +478,7 @@ impl Debug for FileEntry {
             .field("index_list_size", &self.index_list_size)
             .field("length", &self.length)
             .field("offset", &self.offset)
+            .field("input_length", &self.input_length)
             .finish()
     }
 }
@@ -484,6 +545,7 @@ fn parse_file_entry<'a>(i: &'a [u8]) -> IResult<&'a [u8], FileEntry, VerboseErro
         length,
         offset,
         path: String::new(),
+        input_length: 0,
     };
 
     Ok((i, file_entry))

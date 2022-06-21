@@ -1,0 +1,1817 @@
+{
+  "Entries": {
+    "1B0D72341E3F4DE49F1F0DDB8CFE79AB": {
+      "Attributes": {
+        "ArrangementProperties": {
+          "bonusArr": 0,
+          "Metronome": 0,
+          "pathLead": 1,
+          "pathRhythm": 0,
+          "pathBass": 0,
+          "routeMask": 1,
+          "represent": 1,
+          "standardTuning": 0,
+          "nonStandardChords": 1,
+          "barreChords": 0,
+          "powerChords": 0,
+          "dropDPower": 0,
+          "openChords": 0,
+          "fingerPicking": 0,
+          "pickDirection": 0,
+          "doubleStops": 1,
+          "palmMutes": 1,
+          "harmonics": 1,
+          "pinchHarmonics": 1,
+          "hopo": 1,
+          "tremolo": 0,
+          "slides": 1,
+          "unpitchedSlides": 0,
+          "bends": 1,
+          "tapping": 0,
+          "vibrato": 1,
+          "fretHandMutes": 0,
+          "slapPop": 0,
+          "twoFingerPicking": 0,
+          "fifthsAndOctaves": 0,
+          "syncopation": 0,
+          "bassPick": 0,
+          "sustain": 1
+        },
+        "ArrangementSort": 0,
+        "ArrangementType": 0,
+        "BlockAsset": "urn:emergent-world:cuspopvessels",
+        "Chords": {
+          "0": {
+            "0": [
+              17,
+              19
+            ]
+          },
+          "1": {
+            "0": [
+              17,
+              18,
+              19
+            ]
+          },
+          "2": {
+            "0": [
+              17,
+              18,
+              19
+            ]
+          },
+          "3": {
+            "0": [
+              17,
+              18,
+              19,
+              25
+            ]
+          },
+          "4": {
+            "0": [
+              17,
+              18,
+              19,
+              25
+            ]
+          },
+          "5": {
+            "0": [
+              17,
+              18,
+              19
+            ]
+          },
+          "6": {
+            "0": [
+              4,
+              11,
+              17,
+              18,
+              19,
+              25
+            ]
+          },
+          "7": {
+            "0": [
+              3,
+              9,
+              11,
+              12,
+              13,
+              15,
+              16,
+              17,
+              18,
+              19,
+              23,
+              24,
+              25,
+              27,
+              38,
+              39,
+              41,
+              42
+            ]
+          },
+          "8": {
+            "0": [
+              0,
+              1,
+              2,
+              3,
+              8,
+              11,
+              15,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              27,
+              29,
+              31,
+              34,
+              38,
+              39,
+              40,
+              41,
+              42,
+              43
+            ]
+          },
+          "9": {
+            "0": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              11,
+              15,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              27,
+              29,
+              31,
+              34,
+              37,
+              38,
+              39,
+              40,
+              41,
+              42,
+              43
+            ]
+          },
+          "10": {
+            "0": [
+              3,
+              4,
+              11,
+              15,
+              25,
+              26,
+              28,
+              30,
+              33,
+              37,
+              38,
+              39,
+              40,
+              41,
+              42,
+              43
+            ]
+          },
+          "11": {
+            "0": [
+              3,
+              9,
+              10,
+              11,
+              13,
+              14,
+              15,
+              25,
+              26,
+              28,
+              30,
+              33,
+              36,
+              38,
+              40,
+              41,
+              43
+            ]
+          },
+          "12": {
+            "0": [
+              4,
+              5,
+              6,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              25,
+              32,
+              36
+            ]
+          },
+          "13": {
+            "0": [
+              4,
+              5,
+              6,
+              32,
+              35
+            ]
+          },
+          "14": {
+            "0": [
+              4,
+              5,
+              6,
+              7,
+              35
+            ]
+          },
+          "15": {
+            "0": [
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          }
+        },
+        "ChordTemplates": [
+          {
+            "ChordId": 0,
+            "ChordName": " ",
+            "Fingers": [
+              -1,
+              -1,
+              1,
+              -1,
+              4,
+              -1
+            ],
+            "Frets": [
+              -1,
+              -1,
+              5,
+              -1,
+              8,
+              -1
+            ]
+          },
+          {
+            "ChordId": 1,
+            "ChordName": " ",
+            "Fingers": [
+              -1,
+              -1,
+              1,
+              -1,
+              4,
+              -1
+            ],
+            "Frets": [
+              -1,
+              -1,
+              9,
+              -1,
+              12,
+              -1
+            ]
+          },
+          {
+            "ChordId": 2,
+            "ChordName": " ",
+            "Fingers": [
+              -1,
+              -1,
+              1,
+              -1,
+              4,
+              -1
+            ],
+            "Frets": [
+              -1,
+              -1,
+              13,
+              -1,
+              16,
+              -1
+            ]
+          },
+          {
+            "ChordId": 3,
+            "ChordName": "D5",
+            "Fingers": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              2,
+              2,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 4,
+            "ChordName": "F5",
+            "Fingers": [
+              1,
+              1,
+              1,
+              3,
+              -1,
+              -1
+            ],
+            "Frets": [
+              5,
+              5,
+              5,
+              7,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 5,
+            "ChordName": "Fmin",
+            "Fingers": [
+              1,
+              1,
+              4,
+              3,
+              -1,
+              -1
+            ],
+            "Frets": [
+              5,
+              5,
+              8,
+              7,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 6,
+            "ChordName": "E5",
+            "Fingers": [
+              1,
+              1,
+              1,
+              3,
+              -1,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              4,
+              6,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 7,
+            "ChordName": " ",
+            "Fingers": [
+              1,
+              1,
+              1,
+              3,
+              2,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              4,
+              6,
+              5,
+              -1
+            ]
+          },
+          {
+            "ChordId": 8,
+            "ChordName": "E5",
+            "Fingers": [
+              1,
+              1,
+              1,
+              3,
+              4,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              4,
+              6,
+              7,
+              -1
+            ]
+          },
+          {
+            "ChordId": 9,
+            "ChordName": "Fmin",
+            "Fingers": [
+              1,
+              1,
+              4,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              5,
+              5,
+              8,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 10,
+            "ChordName": "E",
+            "Fingers": [
+              1,
+              1,
+              4,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              8,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 11,
+            "ChordName": "E5",
+            "Fingers": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 12,
+            "ChordName": "Emin",
+            "Fingers": [
+              1,
+              1,
+              4,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              7,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 13,
+            "ChordName": "C#5",
+            "Fingers": [
+              1,
+              1,
+              1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              1,
+              1,
+              1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 14,
+            "ChordName": "C#min",
+            "Fingers": [
+              1,
+              1,
+              4,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              1,
+              1,
+              4,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 15,
+            "ChordName": "C#5",
+            "Fingers": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 16,
+            "ChordName": "C#sus2",
+            "Fingers": [
+              1,
+              1,
+              3,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              1,
+              1,
+              3,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 17,
+            "ChordName": "G#Maj7",
+            "Fingers": [
+              -1,
+              -1,
+              4,
+              1,
+              1,
+              -1
+            ],
+            "Frets": [
+              -1,
+              -1,
+              7,
+              3,
+              3,
+              -1
+            ]
+          },
+          {
+            "ChordId": 18,
+            "ChordName": "C7",
+            "Fingers": [
+              -1,
+              -1,
+              4,
+              1,
+              1,
+              -1
+            ],
+            "Frets": [
+              -1,
+              -1,
+              10,
+              7,
+              7,
+              -1
+            ]
+          },
+          {
+            "ChordId": 19,
+            "ChordName": "C#b5/C",
+            "Fingers": [
+              -1,
+              -1,
+              4,
+              1,
+              2,
+              -1
+            ],
+            "Frets": [
+              -1,
+              -1,
+              12,
+              8,
+              10,
+              -1
+            ]
+          },
+          {
+            "ChordId": 20,
+            "ChordName": " ",
+            "Fingers": [
+              -1,
+              -1,
+              1,
+              -1,
+              4,
+              -1
+            ],
+            "Frets": [
+              -1,
+              -1,
+              8,
+              -1,
+              11,
+              -1
+            ]
+          },
+          {
+            "ChordId": 21,
+            "ChordName": " ",
+            "Fingers": [
+              -1,
+              -1,
+              1,
+              -1,
+              4,
+              -1
+            ],
+            "Frets": [
+              -1,
+              -1,
+              12,
+              -1,
+              15,
+              -1
+            ]
+          },
+          {
+            "ChordId": 22,
+            "ChordName": " ",
+            "Fingers": [
+              -1,
+              -1,
+              1,
+              -1,
+              4,
+              -1
+            ],
+            "Frets": [
+              -1,
+              -1,
+              11,
+              -1,
+              14,
+              -1
+            ]
+          },
+          {
+            "ChordId": 23,
+            "ChordName": " ",
+            "Fingers": [
+              -1,
+              -1,
+              1,
+              -1,
+              4,
+              -1
+            ],
+            "Frets": [
+              -1,
+              -1,
+              14,
+              -1,
+              17,
+              -1
+            ]
+          },
+          {
+            "ChordId": 24,
+            "ChordName": " ",
+            "Fingers": [
+              -1,
+              -1,
+              1,
+              -1,
+              4,
+              -1
+            ],
+            "Frets": [
+              -1,
+              -1,
+              16,
+              -1,
+              19,
+              -1
+            ]
+          },
+          {
+            "ChordId": 25,
+            "ChordName": "F5",
+            "Fingers": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              5,
+              5,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 26,
+            "ChordName": "F5",
+            "Fingers": [
+              1,
+              1,
+              1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              5,
+              5,
+              5,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 27,
+            "ChordName": "F5",
+            "Fingers": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              5,
+              5,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 28,
+            "ChordName": "Fmin",
+            "Fingers": [
+              1,
+              1,
+              4,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              5,
+              5,
+              8,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 29,
+            "ChordName": "Fmin",
+            "Fingers": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              5,
+              5,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 30,
+            "ChordName": "E5",
+            "Fingers": [
+              1,
+              1,
+              1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              4,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 31,
+            "ChordName": "E5",
+            "Fingers": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 32,
+            "ChordName": " ",
+            "Fingers": [
+              1,
+              1,
+              1,
+              3,
+              -1,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              4,
+              6,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 33,
+            "ChordName": " ",
+            "Fingers": [
+              1,
+              1,
+              1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              4,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 34,
+            "ChordName": " ",
+            "Fingers": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 35,
+            "ChordName": "E5",
+            "Fingers": [
+              1,
+              1,
+              1,
+              3,
+              -1,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              4,
+              6,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 36,
+            "ChordName": "E5",
+            "Fingers": [
+              1,
+              1,
+              1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              4,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 37,
+            "ChordName": "E5",
+            "Fingers": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 38,
+            "ChordName": "Fmin",
+            "Fingers": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              5,
+              5,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 39,
+            "ChordName": "E",
+            "Fingers": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 40,
+            "ChordName": "Emin",
+            "Fingers": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              4,
+              4,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 41,
+            "ChordName": "C#5",
+            "Fingers": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 42,
+            "ChordName": "C#min",
+            "Fingers": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 43,
+            "ChordName": "C#sus2",
+            "Fingers": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              1,
+              1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 44,
+            "ChordName": "G#Maj7",
+            "Fingers": [
+              -1,
+              -1,
+              4,
+              1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              -1,
+              -1,
+              7,
+              3,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 45,
+            "ChordName": "C7",
+            "Fingers": [
+              -1,
+              -1,
+              4,
+              1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              -1,
+              -1,
+              10,
+              7,
+              -1,
+              -1
+            ]
+          },
+          {
+            "ChordId": 46,
+            "ChordName": "C#b5/C",
+            "Fingers": [
+              -1,
+              -1,
+              4,
+              1,
+              -1,
+              -1
+            ],
+            "Frets": [
+              -1,
+              -1,
+              12,
+              8,
+              -1,
+              -1
+            ]
+          }
+        ],
+        "DynamicVisualDensity": [
+          5.0,
+          4.6,
+          4.2,
+          3.8,
+          3.5,
+          3.2,
+          2.9,
+          2.7,
+          2.4,
+          2.2,
+          2.0,
+          1.9,
+          1.7,
+          1.6,
+          1.3,
+          1.3,
+          1.3,
+          1.3,
+          1.3,
+          1.3
+        ],
+        "FullName": "CusPOPVessels_Lead",
+        "LastConversionDateTime": "6-10-22 23:09",
+        "MasterID_PS3": 1389115048,
+        "MasterID_XBox360": 1389115048,
+        "MaxPhraseDifficulty": 15,
+        "PhraseIterations": [
+          {
+            "PhraseIndex": 0,
+            "MaxDifficulty": 0,
+            "Name": "COUNT",
+            "StartTime": 3.836,
+            "EndTime": 3.836
+          },
+          {
+            "PhraseIndex": 1,
+            "MaxDifficulty": 9,
+            "Name": "p1",
+            "StartTime": 3.836,
+            "EndTime": 15.13
+          },
+          {
+            "PhraseIndex": 1,
+            "MaxDifficulty": 9,
+            "Name": "p1",
+            "StartTime": 15.13,
+            "EndTime": 26.424
+          },
+          {
+            "PhraseIndex": 2,
+            "MaxDifficulty": 10,
+            "Name": "p2",
+            "StartTime": 26.424,
+            "EndTime": 37.718
+          },
+          {
+            "PhraseIndex": 3,
+            "MaxDifficulty": 11,
+            "Name": "p3",
+            "StartTime": 37.718,
+            "EndTime": 49.012
+          },
+          {
+            "PhraseIndex": 4,
+            "MaxDifficulty": 3,
+            "Name": "p4",
+            "StartTime": 49.012,
+            "EndTime": 60.307
+          },
+          {
+            "PhraseIndex": 5,
+            "MaxDifficulty": 2,
+            "Name": "p5",
+            "StartTime": 60.307,
+            "EndTime": 71.601
+          },
+          {
+            "PhraseIndex": 6,
+            "MaxDifficulty": 10,
+            "Name": "p6",
+            "StartTime": 71.601,
+            "EndTime": 82.895
+          },
+          {
+            "PhraseIndex": 7,
+            "MaxDifficulty": 10,
+            "Name": "p7",
+            "StartTime": 82.895,
+            "EndTime": 94.189
+          },
+          {
+            "PhraseIndex": 8,
+            "MaxDifficulty": 15,
+            "Name": "p8",
+            "StartTime": 94.189,
+            "EndTime": 105.483
+          },
+          {
+            "PhraseIndex": 9,
+            "MaxDifficulty": 15,
+            "Name": "p9",
+            "StartTime": 105.483,
+            "EndTime": 116.777
+          },
+          {
+            "PhraseIndex": 10,
+            "MaxDifficulty": 12,
+            "Name": "p10",
+            "StartTime": 116.777,
+            "EndTime": 128.071
+          },
+          {
+            "PhraseIndex": 11,
+            "MaxDifficulty": 6,
+            "Name": "p11",
+            "StartTime": 128.071,
+            "EndTime": 139.365
+          },
+          {
+            "PhraseIndex": 12,
+            "MaxDifficulty": 7,
+            "Name": "p12",
+            "StartTime": 139.365,
+            "EndTime": 156.307
+          },
+          {
+            "PhraseIndex": 13,
+            "MaxDifficulty": 8,
+            "Name": "p13",
+            "StartTime": 156.307,
+            "EndTime": 167.601
+          },
+          {
+            "PhraseIndex": 14,
+            "MaxDifficulty": 9,
+            "Name": "p14",
+            "StartTime": 167.601,
+            "EndTime": 178.895
+          },
+          {
+            "PhraseIndex": 15,
+            "MaxDifficulty": 4,
+            "Name": "p15",
+            "StartTime": 178.895,
+            "EndTime": 179.601
+          },
+          {
+            "PhraseIndex": 16,
+            "MaxDifficulty": 0,
+            "Name": "END",
+            "StartTime": 179.601,
+            "EndTime": 182.66
+          }
+        ],
+        "Phrases": [
+          {
+            "MaxDifficulty": 0,
+            "Name": "COUNT",
+            "IterationCount": 1
+          },
+          {
+            "MaxDifficulty": 9,
+            "Name": "p1",
+            "IterationCount": 2
+          },
+          {
+            "MaxDifficulty": 10,
+            "Name": "p2",
+            "IterationCount": 1
+          },
+          {
+            "MaxDifficulty": 11,
+            "Name": "p3",
+            "IterationCount": 1
+          },
+          {
+            "MaxDifficulty": 3,
+            "Name": "p4",
+            "IterationCount": 1
+          },
+          {
+            "MaxDifficulty": 2,
+            "Name": "p5",
+            "IterationCount": 1
+          },
+          {
+            "MaxDifficulty": 10,
+            "Name": "p6",
+            "IterationCount": 1
+          },
+          {
+            "MaxDifficulty": 10,
+            "Name": "p7",
+            "IterationCount": 1
+          },
+          {
+            "MaxDifficulty": 15,
+            "Name": "p8",
+            "IterationCount": 1
+          },
+          {
+            "MaxDifficulty": 15,
+            "Name": "p9",
+            "IterationCount": 1
+          },
+          {
+            "MaxDifficulty": 12,
+            "Name": "p10",
+            "IterationCount": 1
+          },
+          {
+            "MaxDifficulty": 6,
+            "Name": "p11",
+            "IterationCount": 1
+          },
+          {
+            "MaxDifficulty": 7,
+            "Name": "p12",
+            "IterationCount": 1
+          },
+          {
+            "MaxDifficulty": 8,
+            "Name": "p13",
+            "IterationCount": 1
+          },
+          {
+            "MaxDifficulty": 9,
+            "Name": "p14",
+            "IterationCount": 1
+          },
+          {
+            "MaxDifficulty": 4,
+            "Name": "p15",
+            "IterationCount": 1
+          },
+          {
+            "MaxDifficulty": 0,
+            "Name": "END",
+            "IterationCount": 1
+          }
+        ],
+        "PreviewBankPath": "song_cuspopvessels_preview.bnk",
+        "RelativeDifficulty": 0,
+        "Score_MaxNotes": 816.0,
+        "Score_PNV": 122.549019,
+        "Sections": [
+          {
+            "Name": "intro",
+            "UIName": "$[34286] Intro [1]",
+            "Number": 1,
+            "StartTime": 3.836,
+            "EndTime": 179.601,
+            "StartPhraseIterationIndex": 0,
+            "EndPhraseIterationIndex": 16,
+            "IsSolo": false
+          },
+          {
+            "Name": "noguitar",
+            "UIName": "$[6091] No Guitar [1]",
+            "Number": 1,
+            "StartTime": 179.601,
+            "EndTime": 182.66,
+            "StartPhraseIterationIndex": 17,
+            "EndPhraseIterationIndex": 17,
+            "IsSolo": false
+          }
+        ],
+        "ShowlightsXML": "urn:application:xml:cuspopvessels_showlights",
+        "SongAsset": "urn:application:musicgame-song:cuspopvessels_lead",
+        "SongAverageTempo": 170.0,
+        "SongBank": "song_cuspopvessels.bnk",
+        "SongEvent": "Play_CusPOPVessels",
+        "SongOffset": -3.836,
+        "SongPartition": 0,
+        "SongXml": "urn:application:xml:cuspopvessels_lead",
+        "TargetScore": 100000,
+        "Techniques": {
+          "0": {
+            "1": [
+              1,
+              4,
+              6,
+              7,
+              9,
+              11,
+              13
+            ]
+          },
+          "1": {
+            "1": [
+              1,
+              4,
+              6,
+              7,
+              9,
+              11,
+              13
+            ]
+          },
+          "2": {
+            "1": [
+              1,
+              4,
+              6,
+              7,
+              9,
+              11,
+              13
+            ]
+          },
+          "3": {
+            "1": [
+              1,
+              4,
+              5,
+              6,
+              7,
+              9,
+              11,
+              13
+            ]
+          },
+          "4": {
+            "1": [
+              1,
+              3,
+              4,
+              5,
+              6,
+              7,
+              9,
+              11,
+              13
+            ]
+          },
+          "5": {
+            "1": [
+              1,
+              3,
+              4,
+              5,
+              6,
+              7,
+              9,
+              11,
+              13
+            ]
+          },
+          "6": {
+            "1": [
+              1,
+              3,
+              4,
+              5,
+              6,
+              7,
+              9,
+              11,
+              13
+            ]
+          },
+          "7": {
+            "1": [
+              1,
+              3,
+              4,
+              5,
+              6,
+              7,
+              9,
+              13
+            ]
+          },
+          "8": {
+            "1": [
+              1,
+              5,
+              13
+            ]
+          },
+          "9": {
+            "1": [
+              1,
+              5,
+              13
+            ]
+          },
+          "10": {
+            "1": [
+              1,
+              5,
+              13
+            ]
+          },
+          "11": {
+            "1": [
+              1,
+              5,
+              13
+            ]
+          }
+        },
+        "Tone_A": "dist",
+        "Tone_B": "lead",
+        "Tone_Base": "dist",
+        "Tone_C": "",
+        "Tone_D": "",
+        "Tone_Multiplayer": "",
+        "Tones": [
+          {
+            "GearList": {
+              "Rack1": {
+                "Type": "Racks",
+                "KnobValues": {
+                  "Rack_StudioEQ_Bass": 1.5,
+                  "Rack_StudioEQ_BassFreq": 280.0,
+                  "Rack_StudioEQ_HiMid": -3.0,
+                  "Rack_StudioEQ_HiMidFreq": 7.2,
+                  "Rack_StudioEQ_HiMidQ": 1.0,
+                  "Rack_StudioEQ_LoMid": -1.5,
+                  "Rack_StudioEQ_LoMidFreq": 180.0,
+                  "Rack_StudioEQ_LoMidQ": 1.0,
+                  "Rack_StudioEQ_Treble": -2.0,
+                  "Rack_StudioEQ_TrebleFreq": 4.0
+                },
+                "Key": "Rack_StudioEQ",
+                "Category": "30785"
+              },
+              "Rack2": {
+                "Type": "Racks",
+                "KnobValues": {
+                  "Rack_StudioPlate_Depth": 27.0,
+                  "Rack_StudioPlate_Mix": 6.0,
+                  "Rack_StudioPlate_Time": 29.0,
+                  "Rack_StudioPlate_Tone": 60.0
+                },
+                "Key": "Rack_StudioPlate"
+              },
+              "Amp": {
+                "Type": "Amps",
+                "KnobValues": {
+                  "Amp_MarshallDSL100H_Bass": 66.0,
+                  "Amp_MarshallDSL100H_Gain": 92.0,
+                  "Amp_MarshallDSL100H_Mid": 68.0,
+                  "Amp_MarshallDSL100H_Pres": 38.0,
+                  "Amp_MarshallDSL100H_Res": 1.0,
+                  "Amp_MarshallDSL100H_Treble": 75.0
+                },
+                "Key": "Amp_MarshallDSL100H"
+              },
+              "Cabinet": {
+                "Type": "Cabinets",
+                "KnobValues": {},
+                "Key": "Cab_CA412C_57_Edge"
+              },
+              "PrePedal1": {
+                "Type": "Pedals",
+                "KnobValues": {
+                  "Pedal_EQ5_2200": -2.0,
+                  "Pedal_EQ5_250": -1.0,
+                  "Pedal_EQ5_5700": -5.0,
+                  "Pedal_EQ5_63": -4.0,
+                  "Pedal_EQ5_750": 4.0
+                },
+                "Key": "Pedal_EQ5",
+                "Category": "30785"
+              },
+              "PostPedal1": {
+                "Type": "Pedals",
+                "KnobValues": {
+                  "Pedal_NoiseGate_Rate": 100.0,
+                  "Pedal_NoiseGate_Thresh": -55.0
+                },
+                "Key": "Pedal_NoiseGate"
+              }
+            },
+            "IsCustom": true,
+            "Volume": "-29.6",
+            "ToneDescriptors": [
+              "$[35722]DISTORTION"
+            ],
+            "Key": "dist",
+            "NameSeparator": " - ",
+            "Name": "dist",
+            "SortOrder": 0.0
+          },
+          {
+            "GearList": {
+              "Rack1": {
+                "Type": "Racks",
+                "KnobValues": {
+                  "Rack_StudioEQ_Bass": -0.5,
+                  "Rack_StudioEQ_BassFreq": 280.0,
+                  "Rack_StudioEQ_HiMid": -3.0,
+                  "Rack_StudioEQ_HiMidFreq": 7.2,
+                  "Rack_StudioEQ_HiMidQ": 1.0,
+                  "Rack_StudioEQ_LoMid": -3.0,
+                  "Rack_StudioEQ_LoMidFreq": 180.0,
+                  "Rack_StudioEQ_LoMidQ": 1.0,
+                  "Rack_StudioEQ_Treble": -2.0,
+                  "Rack_StudioEQ_TrebleFreq": 4.0
+                },
+                "Key": "Rack_StudioEQ",
+                "Category": "30785"
+              },
+              "Rack2": {
+                "Type": "Racks",
+                "KnobValues": {
+                  "Rack_StudioPlate_Depth": 27.0,
+                  "Rack_StudioPlate_Mix": 6.0,
+                  "Rack_StudioPlate_Time": 29.0,
+                  "Rack_StudioPlate_Tone": 60.0
+                },
+                "Key": "Rack_StudioPlate"
+              },
+              "Amp": {
+                "Type": "Amps",
+                "KnobValues": {
+                  "Amp_MarshallDSL100H_Bass": 66.0,
+                  "Amp_MarshallDSL100H_Gain": 92.0,
+                  "Amp_MarshallDSL100H_Mid": 68.0,
+                  "Amp_MarshallDSL100H_Pres": 38.0,
+                  "Amp_MarshallDSL100H_Res": 1.0,
+                  "Amp_MarshallDSL100H_Treble": 75.0
+                },
+                "Key": "Amp_MarshallDSL100H"
+              },
+              "Cabinet": {
+                "Type": "Cabinets",
+                "KnobValues": {},
+                "Key": "Cab_CA412C_57_Edge"
+              },
+              "PrePedal1": {
+                "Type": "Pedals",
+                "KnobValues": {
+                  "Pedal_EQ5_2200": -2.0,
+                  "Pedal_EQ5_250": -1.0,
+                  "Pedal_EQ5_5700": -5.0,
+                  "Pedal_EQ5_63": -4.0,
+                  "Pedal_EQ5_750": 4.0
+                },
+                "Key": "Pedal_EQ5",
+                "Category": "30785"
+              },
+              "PostPedal1": {
+                "Type": "Pedals",
+                "KnobValues": {
+                  "Pedal_NoiseGate_Rate": 100.0,
+                  "Pedal_NoiseGate_Thresh": -55.0
+                },
+                "Key": "Pedal_NoiseGate"
+              }
+            },
+            "IsCustom": true,
+            "Volume": "-30.2",
+            "ToneDescriptors": [
+              "$[35724]LEAD"
+            ],
+            "Key": "lead",
+            "NameSeparator": " - ",
+            "Name": "lead",
+            "SortOrder": 0.0
+          }
+        ],
+        "SongVolume": -8.5,
+        "PreviewVolume": -7.0,
+        "AlbumArt": "urn:image:dds:album_cuspopvessels",
+        "AlbumName": "Solipsis",
+        "AlbumNameSort": "Solipsis",
+        "ArrangementName": "Lead",
+        "ArtistName": "Purest Of Pain",
+        "ArtistNameSort": "Purest Of Pain",
+        "CapoFret": 0.0,
+        "CentOffset": 0.0,
+        "DLC": true,
+        "DLCKey": "CusPOPVessels",
+        "DNA_Chords": 0.0,
+        "DNA_Riffs": 0.0,
+        "DNA_Solo": 0.0,
+        "EasyMastery": 0.245098039,
+        "LeaderboardChallengeRating": 0,
+        "ManifestUrn": "urn:database:json-db:cuspopvessels_lead",
+        "MasterID_RDV": 1389115048,
+        "MediumMastery": 0.746323529,
+        "NotesEasy": 200.0,
+        "NotesHard": 816.0,
+        "NotesMedium": 609.0,
+        "Shipping": true,
+        "SKU": "",
+        "SongDiffEasy": 0.700755488,
+        "SongDiffHard": 0.714770598,
+        "SongDiffMed": 1.06690023,
+        "SongDifficulty": 0.714770598,
+        "SongKey": "CusPOPVessels",
+        "SongLength": 182.66,
+        "SongName": "Vessels",
+        "SongNameSort": "Vessels",
+        "SongYear": 2018,
+        "Tuning": {
+          "string0": -4,
+          "string1": -2,
+          "string2": -2,
+          "string3": -2,
+          "string4": -2,
+          "string5": -2
+        },
+        "PersistentID": "1B0D72341E3F4DE49F1F0DDB8CFE79AB"
+      }
+    }
+  },
+  "ModelName": "RSEnumerable_Song",
+  "IterationVersion": 2,
+  "InsertRoot": "Static.Songs.Entries"
+}
