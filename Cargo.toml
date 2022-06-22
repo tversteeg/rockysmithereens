@@ -1,6 +1,6 @@
 [workspace]
 members = ["rockysmithereens", "crates/*", "tools/*"]
-default-members = ["rockysmithereens", "tools/psarc_extract"]
+default-members = ["rockysmithereens", "tools/psarc_extract", "tools/cli_music_player"]
 
 # Don't make debug builds painfully slow
 [profile.dev]

@@ -1071,6 +1071,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cli_music_player"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "env_logger 0.9.0",
+ "rockysmithereens_parser",
+ "rodio",
+ "rodio_wem",
+]
+
+[[package]]
 name = "clipboard-win"
 version = "4.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3118,6 +3130,14 @@ checksum = "ec0939e9f626e6c6f1989adb6226a039c855ca483053f0ee7c98b90e41cf731e"
 dependencies = [
  "cpal",
  "lewton",
+]
+
+[[package]]
+name = "rodio_wem"
+version = "0.1.0"
+dependencies = [
+ "rodio",
+ "thiserror",
 ]
 
 [[package]]

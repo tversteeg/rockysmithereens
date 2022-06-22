@@ -12,8 +12,8 @@ pub enum ArchiveReadError {
     UnrecognizedFile,
     #[error("unsupported version")]
     UnsupportedVersion,
-    #[error("corrupt file")]
-    Corrupt,
+    #[error("corrupt file, reason: {0}")]
+    Corrupt(String),
     #[error("file does not exist")]
     FileDoesNotExist,
     #[error("path not found: {0}")]

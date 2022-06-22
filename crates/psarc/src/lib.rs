@@ -127,10 +127,8 @@ impl PlaystationArchive {
             return Ok(self.data
                 [entry.offset as usize..entry.offset as usize + entry.length as usize]
                 .to_vec());
-        }
-
-        // We don't support this compression type yet
-        if self.compression_type == CompressionType::Lzma {
+        } else if self.compression_type == CompressionType::Lzma {
+            // We don't support this compression type yet
             todo!();
         }
 
@@ -138,14 +136,18 @@ impl PlaystationArchive {
         let mut result = Cursor::new(Vec::with_capacity(entry.length as usize));
 
         // Get a slice which will be data for this entry
-        let block_start =
+        let all_block_bytes =
             &self.data[entry.offset as usize..entry.offset as usize + entry.input_length];
 
-        // Increment the entry in the block list
-        let mut block_index = entry.index_list_size as usize;
+        // Calculate how much blocks must be parsed
+        let total_blocks = (entry.length as f32 / self.block_size.to_u32() as f32).ceil() as usize;
 
-        let mut chunk = block_start;
-        while result.position() < entry.length {
+        log::trace!("reading {} blocks", total_blocks);
+
+        // Extract all blocks
+        let block_start = entry.index_list_size as usize;
+        let mut chunk = all_block_bytes;
+        for block_index in block_start..block_start + total_blocks {
             // Get the block size from the blocks
             let block_length = self.block_sizes.get(block_index).unwrap_or_else(|| &0);
 
@@ -163,47 +165,53 @@ impl PlaystationArchive {
                     0
                 };
 
-                if zlib_magic == 0x78DA || zlib_magic == 0x7801 {
-                    log::trace!("parsing compressed block {}", block_index,);
+                log::trace!("parsing block {}", block_index,);
 
+                if zlib_magic == 0x78DA || zlib_magic == 0x7801 {
                     // Decode if compressed
                     let mut decoder = ZlibDecoder::new(chunk);
-                    std::io::copy(&mut decoder, &mut result)
-                        .map_err(|_| ArchiveReadError::Corrupt)?;
+                    std::io::copy(&mut decoder, &mut result).map_err(|_| {
+                        ArchiveReadError::Corrupt(
+                            "could not copy decoded bytes to output".to_string(),
+                        )
+                    })?;
 
                     // Move the chunk further by how many bytes the decoder read
                     chunk = &chunk[decoder.total_in() as usize..];
                 } else {
+                    let mut block_size = self.block_size.to_u32() as usize;
+                    if block_size > chunk.len() {
+                        // Ensure that the block can't be read out of bounds
+                        block_size = chunk.len();
+                    }
+
                     log::trace!(
-                        "found magic value 0x{:04x}, so putting remaining chunk of {} bytes uncompressed into buffer",
+                        "found magic value 0x{:04X}, block is uncompressed with {} bytes",
                         zlib_magic,
-                        chunk.len(),
+                        block_size
                     );
 
                     // Write the rest
-                    result
-                        .write(&chunk)
-                        .map_err(|_| ArchiveReadError::Corrupt)?;
+                    result.write(&chunk[..block_size]).map_err(|_| {
+                        ArchiveReadError::Corrupt(
+                            "could not copy uncompressed bytes to result buffer".to_string(),
+                        )
+                    })?;
 
-                    // Everything has been written so we are done with this loop
-                    break;
+                    chunk = &chunk[block_size..];
                 }
             }
-
-            block_index += 1;
         }
 
         let string = result.into_inner();
 
-        log::trace!(
-            "{} block(s) read of a total of {} bytes",
-            block_index,
-            string.len()
-        );
+        log::trace!("read total of {} bytes", string.len());
 
         // Verify the result size
         if string.len() != entry.length as usize {
-            Err(ArchiveReadError::Corrupt)
+            Err(ArchiveReadError::Corrupt(
+                "read entry bytes doesn't match expected bytes".to_string(),
+            ))
         } else {
             Ok(string)
         }
@@ -228,13 +236,15 @@ impl PlaystationArchive {
     /// Read a file as a string.
     pub fn read_file_as_string(&self, file_index: usize) -> Result<String> {
         let bytes = self.read_file(file_index)?;
-        String::from_utf8(bytes).map_err(|_| ArchiveReadError::Corrupt)
+        String::from_utf8(bytes)
+            .map_err(|_| ArchiveReadError::Corrupt("could not convert bytes to utf-8".to_string()))
     }
 
     /// Read file as a string based on the Rocksmith path.
     pub fn read_rs_file_as_string(&self, path: &str, extension: &str) -> Result<String> {
         let bytes = self.read_rs_file(path, extension)?;
-        String::from_utf8(bytes).map_err(|_| ArchiveReadError::Corrupt)
+        String::from_utf8(bytes)
+            .map_err(|_| ArchiveReadError::Corrupt("could not convert bytes to utf-8".to_string()))
     }
 
     /// Get the index for a file path.
@@ -343,7 +353,9 @@ impl CompressionType {
             0x00000000 => Ok(CompressionType::None),
             0x7A6C6962 => Ok(CompressionType::Zlib),
             0x6C7A6D61 => Ok(CompressionType::Lzma),
-            _ => Err(ArchiveReadError::Corrupt),
+            _ => Err(ArchiveReadError::Corrupt(
+                "unrecognized compression type".to_string(),
+            )),
         }
     }
 }
@@ -370,7 +382,9 @@ impl ArchiveFlags {
             1 => Ok(ArchiveFlags::IgnoreCase),
             2 => Ok(ArchiveFlags::Absolute),
             4 => Ok(ArchiveFlags::Encrypted),
-            _ => Err(ArchiveReadError::Corrupt),
+            _ => Err(ArchiveReadError::Corrupt(
+                "unrecognized archive flags".to_string(),
+            )),
         }
     }
 }
@@ -390,7 +404,9 @@ impl BlockSize {
             65536 => Ok(BlockSize::U16),
             16777216 => Ok(BlockSize::U24),
             4294967295 => Ok(BlockSize::U32),
-            _ => Err(ArchiveReadError::Corrupt),
+            _ => Err(ArchiveReadError::Corrupt(
+                "unregular block size".to_string(),
+            )),
         }
     }
 
@@ -446,7 +462,13 @@ impl<'a> TableOfContent<'a> {
             decryptor.decrypt(&mut bytes);
         }
 
-        Ok(bytes)
+        if bytes.len() != self.size() as usize {
+            Err(ArchiveReadError::Corrupt(
+                "table of content input size doesn't match decrypted size".to_string(),
+            ))
+        } else {
+            Ok(bytes)
+        }
     }
 
     /// Get the true amount of bytes for the TOC.
