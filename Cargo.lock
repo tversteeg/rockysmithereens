@@ -3136,6 +3136,8 @@ dependencies = [
 name = "rodio_wem"
 version = "0.1.0"
 dependencies = [
+ "lewton",
+ "nom",
  "rodio",
  "thiserror",
 ]

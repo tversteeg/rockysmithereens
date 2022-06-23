@@ -21,7 +21,7 @@ impl Manifest {
         // Read the file from the archive
         let json = archive.read_rs_file_as_string(path, "json")?;
 
-        Ok(dbg!(serde_json::from_str(&json))?)
+        Ok(serde_json::from_str(&json)?)
     }
 
     /// Get the attributes, takes a lot of shortcuts.

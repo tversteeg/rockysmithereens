@@ -58,9 +58,7 @@ impl SongFile {
     }
 
     /// Get the bytes from the music embedded with the chosen song.
-    pub fn ogg(&self, index: usize) -> Result<Vec<u8>> {
-        dbg!(&self.archive);
-        dbg!(&self.entities[index]);
+    pub fn wem(&self, index: usize) -> Result<Vec<u8>> {
         let path = self.entities[index]
             .sng_asset
             .as_ref()

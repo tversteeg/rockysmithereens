@@ -9,6 +9,7 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use rockysmithereens_parser::SongFile;
 use rodio::{Decoder, OutputStream, Source};
+use rodio_wem::WemDecoder;
 
 /// Command line arguments.
 #[derive(Parser, Debug)]
@@ -41,8 +42,8 @@ fn main() -> Result<()> {
     );
 
     // Convert the raw song binary to an audio source
-    let file = Cursor::new(song.ogg(0)?);
-    let decoder = rodio_wem::vorbis_from_wem(file)?;
+    let file = song.wem(0)?;
+    let decoder = WemDecoder::new(&file)?;
 
     // Play the song
     let (_stream, stream_handle) = OutputStream::try_default()?;
