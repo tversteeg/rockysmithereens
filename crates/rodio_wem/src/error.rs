@@ -13,6 +13,8 @@ pub type Result<T> = std::result::Result<T, WemError>;
 pub enum WemError {
     #[error("missing data at '{0}'")]
     MissingData(String),
+    #[error("missing chunk '{0}'")]
+    MissingChunk(String),
     #[error("input bytes are not vorbis")]
     NotVorbis,
     #[error("rodio decoder error: {0}")]

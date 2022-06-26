@@ -26,10 +26,12 @@ use crate::error::Result;
 /// Decoder for an Wem file.
 #[derive(Debug)]
 pub struct WemDecoder {
-    /// Whether the numbers should be read in little endian order.
-    endianness: Endianness,
     /// Size of the riff block.
     riff_size: u64,
+    /// The fmt chunk.
+    ///
+    /// This is required to be one of the chunks.
+    fmt: Fmt,
 }
 
 impl WemDecoder {
@@ -46,12 +48,12 @@ impl WemDecoder {
         let (i, _) = context("wave block", tag("WAVE"))(i)?;
 
         // Read the chunks
-        let (i, chunks) = parse_chunks(i, endianness)?;
+        let (_, chunks) = parse_chunks(i, endianness)?;
 
-        Ok(dbg!(Self {
-            endianness,
-            riff_size
-        }))
+        // Extract the required chunks
+        let fmt = chunks.fmt()?.clone();
+
+        Ok(dbg!(Self { riff_size, fmt }))
     }
 }
 
@@ -63,17 +65,18 @@ impl Source for WemDecoder {
 
     #[inline]
     fn channels(&self) -> u16 {
-        todo!()
+        self.fmt.channels
     }
 
     #[inline]
     fn sample_rate(&self) -> u32 {
-        todo!()
+        self.fmt.sample_rate
     }
 
     #[inline]
     fn total_duration(&self) -> Option<Duration> {
-        todo!()
+        // TODO
+        None
     }
 }
 
@@ -91,18 +94,20 @@ impl Iterator for WemDecoder {
     }
 }
 
+/// Fmt chunk data.
+#[derive(Debug, Clone)]
+pub struct Fmt {
+    pub size: u32,
+    pub channels: u16,
+    pub sample_rate: u32,
+    pub avg_bytes_per_second: u32,
+}
+
 /// A data chunk.
 #[derive(Debug)]
 pub enum Chunk {
-    Fmt {
-        size: u32,
-        channels: u16,
-        sample_rate: u32,
-        avg_bytes_per_second: u32,
-    },
-    Data {
-        size: u32,
-    },
+    Fmt(Fmt),
+    Data { size: u32 },
 }
 
 impl Chunk {
@@ -131,12 +136,12 @@ impl Chunk {
 
                 (
                     i,
-                    Self::Fmt {
+                    Self::Fmt(Fmt {
                         size,
                         channels,
                         sample_rate,
                         avg_bytes_per_second,
-                    },
+                    }),
                 )
             }
             b"data" => (i, Self::Data { size }),
@@ -147,9 +152,27 @@ impl Chunk {
     /// The chunk size in bytes.
     pub fn size(&self) -> u32 {
         match self {
-            Chunk::Fmt { size, .. } => *size,
+            Chunk::Fmt(Fmt { size, .. }) => *size,
             Chunk::Data { size } => *size,
         }
+    }
+}
+
+/// A trait to get a specific chunk from the list of chunks.
+trait ChunkList {
+    /// Get the fmt chunk.
+    fn fmt(&'_ self) -> Result<&'_ Fmt>;
+}
+
+impl ChunkList for Vec<Chunk> {
+    fn fmt(&'_ self) -> Result<&'_ Fmt> {
+        for chunk in self {
+            if let Chunk::Fmt(fmt) = chunk {
+                return Ok(fmt);
+            }
+        }
+
+        Err(WemError::MissingChunk("fmt".to_string()))
     }
 }
 

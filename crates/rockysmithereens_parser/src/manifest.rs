@@ -47,13 +47,22 @@ struct Entry {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Attributes {
+    #[serde(default)]
     pub arrangement_properties: HashMap<String, u8>,
+    #[serde(default)]
     pub arrangement_sort: u8,
+    #[serde(default)]
     pub arrangement_type: u8,
+    #[serde(default)]
     pub arrangement_name: String,
+    #[serde(default)]
     pub full_name: String,
+    #[serde(default)]
     pub artist_name: String,
+    #[serde(default)]
     pub album_name: String,
+    #[serde(default)]
     pub song_name: String,
+    #[serde(default)]
     pub song_length: f32,
 }
