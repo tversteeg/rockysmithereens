@@ -21,6 +21,8 @@ pub enum WemError {
     Rodio(#[from] DecoderError),
     #[error("parsing error: {0}")]
     Nom(String),
+    #[error("writing bytes error: {0}")]
+    WritingBytes(#[from] std::io::Error),
 }
 
 impl<T: Debug> From<Err<VerboseError<T>>> for WemError {
