@@ -1,4 +1,6 @@
+mod codebook;
 mod error;
+mod utils;
 
 use std::{
     io::{Read, Seek, SeekFrom, Write},
@@ -6,6 +8,7 @@ use std::{
     vec::IntoIter,
 };
 
+use bitvec::{field::BitField, order::Lsb0, view::BitView};
 use byteorder::{LittleEndian, WriteBytesExt};
 use error::WemError;
 use nom::{
@@ -21,7 +24,7 @@ use nom::{
 };
 use rodio::Source;
 
-use crate::error::Result;
+use crate::{codebook::CodebookLibrary, error::Result};
 
 /// Decoder for an Wem file.
 #[derive(Debug)]
@@ -383,8 +386,26 @@ pub fn create_setup_packet(endianness: Endianness, fmt: &Fmt, data: &[u8]) -> Re
         context("setup packet size", u16(endianness))(&data[(fmt.setup_packet_offset as usize)..])?;
 
     // Get the amount of codebooks
-    let (i, codebook_count) = context("setup packet codebook count", u8)(i)?;
+    let (mut i, codebook_count_minus_one) = context("setup packet codebook count", u8)(i)?;
+    let codebook_count = codebook_count_minus_one + 1;
     dbg!(size, codebook_count);
+
+    // Rewrite the codebooks
+    let codebook_lib = CodebookLibrary::from_aotuv();
+    for _ in 0..codebook_count {
+        // Get the codebook index
+        let id: u16 = i[0..2].view_bits::<Lsb0>()[0..10].load();
+        dbg!(id);
+
+        // Rewrite the codebook
+        let (len, new_bytes) = codebook_lib.rebuild(id as usize)?;
+
+        bytes.write(&new_bytes)?;
+
+        // Move the input buffer to the bytes read
+        // The two extra bytes are for the index
+        i = &i[len + 2..];
+    }
 
     // Framing
     bytes.write_u8(1)?;

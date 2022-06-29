@@ -11,6 +11,8 @@ pub type Result<T> = std::result::Result<T, WemError>;
 
 #[derive(Debug, Error)]
 pub enum WemError {
+    #[error("{0} is corrupt")]
+    Corrupt(String),
     #[error("missing data at '{0}'")]
     MissingData(String),
     #[error("missing chunk '{0}'")]

@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+bitvec = "1.0.0"
 byteorder = "1.4.3"
 lewton = "0.10.2"
 nom = "7.1.1"
