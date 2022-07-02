@@ -1,8 +1,5 @@
 use bitvec::{order::Lsb0, prelude::BitVec, view::BitView};
-use nom::{
-    error::context,
-    number::complete::{le_u16},
-};
+use nom::{error::context, number::complete::le_u16};
 
 use crate::{
     error::Result,
@@ -51,7 +48,6 @@ impl Packet {
                 if next_block_size > 0 {
                     let (_, next_mode_number): (_, u8) = read(next_block.view_bits(), mode_bits);
 
-                    //mode_blockflag[next_mode_number as usize]
                     mode_blockflag[next_mode_number as usize]
                 } else {
                     false

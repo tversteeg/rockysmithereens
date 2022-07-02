@@ -4,6 +4,7 @@ mod xblock;
 
 use manifest::Manifest;
 use psarc::PlaystationArchive;
+use rodio_wem::WemDecoder;
 
 use crate::{
     error::{Result, RocksmithArchiveError},
@@ -23,6 +24,7 @@ impl SongFile {
     pub fn parse(file: &[u8]) -> Result<Self> {
         // Parse the playstation archive file
         let archive = PlaystationArchive::parse(file)?;
+        dbg!(archive.paths_iter().collect::<Vec<_>>());
 
         // Get the xblock file
         let xblock_indices = archive
@@ -57,6 +59,11 @@ impl SongFile {
         })
     }
 
+    /// Read a file from the archive.
+    pub fn read_file(&self, path: &str) -> Result<Vec<u8>> {
+        Ok(self.archive.read_file_with_path(path)?)
+    }
+
     /// Get the bytes from the music embedded with the chosen song.
     pub fn wem(&self, index: usize) -> Result<Vec<u8>> {
         let _path = self.entities[index]
@@ -65,5 +72,11 @@ impl SongFile {
             .ok_or_else(|| RocksmithArchiveError::MissingData("wem".into()))?;
 
         Ok(self.archive.read_rs_file("", "wem")?)
+    }
+
+    /// Get the bytes from the music embedded with the chosen song and recode it to a proper vorbis
+    /// decoder.
+    pub fn vorbis(&self, index: usize) -> Result<WemDecoder> {
+        Ok(WemDecoder::new(&self.wem(index)?)?)
     }
 }

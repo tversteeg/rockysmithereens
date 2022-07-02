@@ -215,6 +215,17 @@ impl PlaystationArchive {
         }
     }
 
+    /// Read a file from a path.
+    pub fn read_file_with_path(&self, path: &str) -> Result<Vec<u8>> {
+        log::debug!("reading file with path '{}'", path);
+
+        let index = self
+            .index_for_path(&path)
+            .ok_or(ArchiveReadError::PathNotFound(path.to_string()))?;
+
+        self.read_file(index)
+    }
+
     /// Read file as a string based on the Rocksmith path.
     pub fn read_rs_file(&self, path: &str, extension: &str) -> Result<Vec<u8>> {
         log::debug!("reading file with rs path '{}'", path);

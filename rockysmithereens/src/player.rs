@@ -1,23 +1,24 @@
+use std::sync::Arc;
+
 use bevy::{
+    audio::{Audio, Decodable},
     ecs::event::EventReader,
-    prelude::{Assets, ResMut},
+    prelude::{AssetServer, Assets, Res, ResMut},
 };
+use rodio_wem::WemDecoder;
 
-use crate::{asset::RocksmithAsset, event::StartEvent, State};
+use crate::{asset::RocksmithAsset, event::LoadedEvent, State};
 
-/// Listen for the start event.
-pub fn start_listener(
-    mut events: EventReader<StartEvent>,
-    state: ResMut<State>,
-    rocksmith_assets: ResMut<Assets<RocksmithAsset>>,
+/// Listen for the loaded event.
+pub fn loaded_listener(
+    mut events: EventReader<LoadedEvent>,
+
+    asset_server: Res<AssetServer>,
+    audio: Res<Audio>,
 ) {
     for _ in events.iter() {
-        let asset = rocksmith_assets.get(&state.handle);
-        if let Some(file) = asset {
-            if let Some(current_song) = state.current_song {
-                // Load the bytes of the ogg song
-                let bytes = file.0.ogg(current_song).expect("loading song file");
-            }
-        }
+        let music = asset_server.load("audio/windows/2147314675.wem");
+        dbg!(&music);
+        audio.play(music);
     }
 }

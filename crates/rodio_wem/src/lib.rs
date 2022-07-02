@@ -3,11 +3,12 @@ mod error;
 mod packet;
 mod utils;
 
+pub use error::WemError;
+
 use std::{io::Write, time::Duration, vec::IntoIter};
 
 use bitvec::{order::Lsb0, prelude::BitVec, view::BitView};
 use byteorder::{LittleEndian, WriteBytesExt};
-use error::WemError;
 use lewton::{
     audio::PreviousWindowRight,
     header::{CommentHeader, HeaderSet, IdentHeader, SetupHeader},

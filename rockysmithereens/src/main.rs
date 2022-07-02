@@ -1,11 +1,15 @@
 mod asset;
 mod event;
+mod filesystem;
 mod player;
+mod wem;
 
 use std::path::PathBuf;
 
 use asset::{RocksmithAsset, RocksmithAssetLoader};
 use bevy::{
+    asset::AssetPlugin,
+    audio::AudioOutput,
     math::Vec3,
     pbr::{PbrBundle, PointLight, PointLightBundle, StandardMaterial},
     prelude::{
@@ -19,10 +23,13 @@ use bevy_egui::{
     EguiContext, EguiPlugin,
 };
 use clap::{Parser, Subcommand};
-use event::StartEvent;
+use event::{LoadedEvent, StartEvent};
+use filesystem::FilesystemPlugin;
 use rfd::FileDialog;
 
 use rockysmithereens_parser::SongFile;
+use rodio_wem::WemDecoder;
+use wem::WemPlugin;
 
 /// Command line arguments.
 #[derive(Parser, Debug)]
@@ -44,61 +51,31 @@ pub struct State {
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins_with(DefaultPlugins, |group| {
+            // Insert the custom filesystem asset plugin at the right position
+            group.add_before::<AssetPlugin, _>(FilesystemPlugin)
+        })
         .add_plugin(EguiPlugin)
+        .add_plugin(WemPlugin)
         .init_resource::<State>()
         .add_asset::<RocksmithAsset>()
         .init_asset_loader::<RocksmithAssetLoader>()
         .add_event::<StartEvent>()
+        .add_event::<LoadedEvent>()
         .add_startup_system(setup)
         .add_system(ui)
-        .add_system(player::start_listener)
+        .add_system(player::loaded_listener)
         .run();
 }
 
 /// set up a simple 3D scene
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut state: ResMut<State>,
-    asset_server: Res<AssetServer>,
-) {
+fn setup(mut state: ResMut<State>, asset_server: Res<AssetServer>) {
     // Parse command line arguments
     let cli = Cli::parse();
     // Load the asset if set
     if let Some(path) = cli.path {
         state.handle = asset_server.load::<RocksmithAsset, _>(&*path);
     }
-
-    // plane
-    commands.spawn_bundle(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
-        material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
-        ..Default::default()
-    });
-    // cube
-    commands.spawn_bundle(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-        transform: Transform::from_xyz(0.0, 0.5, 0.0),
-        ..Default::default()
-    });
-    // light
-    commands.spawn_bundle(PointLightBundle {
-        point_light: PointLight {
-            intensity: 1500.0,
-            shadows_enabled: true,
-            ..Default::default()
-        },
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
-        ..Default::default()
-    });
-    // camera
-    commands.spawn_bundle(PerspectiveCameraBundle {
-        transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ..Default::default()
-    });
 }
 
 /// The UI for selecting a song.
