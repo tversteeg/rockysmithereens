@@ -2978,7 +2978,9 @@ dependencies = [
  "anyhow",
  "clap",
  "env_logger 0.9.0",
+ "log",
  "psarc",
+ "rodio_wem",
 ]
 
 [[package]]

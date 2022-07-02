@@ -3,7 +3,7 @@ use nom::{error::context, number::complete::le_u32};
 
 use crate::{
     error::{Result, WemError},
-    utils::{read, read_bool},
+    utils::{log2, read, read_bool, read_write, read_write_bool, write},
 };
 
 /// Represents an collection of external codebooks loaded from a file.
@@ -40,7 +40,7 @@ impl<'a> CodebookLibrary<'a> {
     }
 
     /// Rebuild the vorbis header input codebook.
-    pub fn rebuild(&self, codebook_index: usize) -> Result<(usize, Vec<u8>)> {
+    pub fn rebuild(&self, codebook_index: usize) -> Result<BitVec<u8, Lsb0>> {
         // Get the codebook data belonging to the index
         let codebook_data = self.codebook(codebook_index)?;
 
@@ -51,17 +51,17 @@ impl<'a> CodebookLibrary<'a> {
         let mut out = BitVec::<_, Lsb0>::new();
 
         // Identifier
-        out.extend(&0x564342u32.view_bits::<Lsb0>()[..24]);
+        write(0x564342u32, &mut out, 24);
 
         // Read the metadata from the codebook
         let (i, dimensions): (_, u32) = read(i, 4);
-        out.extend(&dimensions.view_bits::<Lsb0>()[..16]);
+        write(dimensions, &mut out, 16);
 
         let (i, entry_count): (_, u32) = read(i, 14);
-        out.extend(&entry_count.view_bits::<Lsb0>()[..24]);
+        write(entry_count, &mut out, 24);
 
         // Ordered flag
-        let (mut i, ordered) = read_bool(i);
+        let (mut i, ordered) = read_write_bool(i, &mut out);
         if ordered {
             todo!();
         } else {
@@ -69,16 +69,20 @@ impl<'a> CodebookLibrary<'a> {
             let codeword_lengths_length: u8;
             (i, codeword_lengths_length) = read(i, 3);
 
+            if codeword_lengths_length == 0 || codeword_lengths_length > 5 {
+                return Err(WemError::Corrupt(
+                    "nonsense codeword lengths length".to_string(),
+                ));
+            }
+
             let sparse;
-            (i, sparse) = read_bool(i);
-            out.push(sparse);
+            (i, sparse) = read_write_bool(i, &mut out);
 
             for _ in 0..entry_count {
                 // Read and write the present bool if sparse is set
                 let present = if sparse {
                     let present;
-                    (i, present) = read_bool(i);
-                    out.push(present);
+                    (i, present) = read_write_bool(i, &mut out);
 
                     present
                 } else {
@@ -88,34 +92,46 @@ impl<'a> CodebookLibrary<'a> {
                 if present {
                     let codeword_length: u8;
                     (i, codeword_length) = read(i, codeword_lengths_length as usize);
-                    out.extend(&codeword_length.view_bits::<Lsb0>()[..5]);
+                    write(codeword_length, &mut out, 5);
                 }
             }
         }
 
         // Lookup table
         let (mut i, lookup_type): (_, u8) = read(i, 1);
-        out.extend(&lookup_type.view_bits::<Lsb0>()[..4]);
+        write(lookup_type, &mut out, 4);
 
         if lookup_type == 1 {
-            let min: u32;
-            (i, min) = read(i, 32);
-            out.extend(&min.view_bits::<Lsb0>()[..32]);
+            let _min: u32;
+            (i, _min) = read_write(i, &mut out, 32);
 
-            let max: u32;
-            (i, max) = read(i, 32);
-            out.extend(&max.view_bits::<Lsb0>()[..32]);
+            let _max: u32;
+            (i, _max) = read_write(i, &mut out, 32);
+
+            let value_length: u8;
+            (i, value_length) = read_write(i, &mut out, 4);
 
             let sequence_flag;
             (i, sequence_flag) = read_bool(i);
             out.push(sequence_flag);
+
+            let quantvals = CodebookLibrary::quantvals(entry_count, dimensions);
+            for _ in 0..quantvals {
+                let _val: u32;
+                (i, _val) = read_write(i, &mut out, value_length as usize + 1);
+            }
         } else if lookup_type != 0 {
             return Err(WemError::Corrupt("lookup type".to_string()));
         }
 
         let bits_read = codebook_data.view_bits::<Lsb0>().len() - i.len();
 
-        Ok((bits_read / 8, out.into_vec()))
+        // Ensure that we used all bytes
+        if codebook_data.len() != bits_read / 8 + 1 {
+            Err(WemError::Corrupt("codebook size mismatch".to_string()))
+        } else {
+            Ok(out)
+        }
     }
 
     /// Get the data for a specific codebook.
@@ -132,6 +148,25 @@ impl<'a> CodebookLibrary<'a> {
             .unwrap_or(self.data.len());
 
         Ok(&self.data[first_offset..last_offset])
+    }
+
+    /// Get the amount of quant values that should be parsed.
+    pub fn quantvals(entries: u32, dimensions: u32) -> u32 {
+        let bits = log2(entries);
+        let mut vals = entries >> ((bits - 1) * (dimensions - 1) / dimensions);
+
+        loop {
+            let acc = vals.pow(dimensions);
+            let acc1 = (vals + 1).pow(dimensions);
+
+            if acc <= entries && acc1 > entries {
+                return vals;
+            } else if acc > entries {
+                vals -= 1;
+            } else {
+                vals += 1;
+            }
+        }
     }
 }
 

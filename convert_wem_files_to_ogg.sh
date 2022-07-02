@@ -8,7 +8,7 @@ FILES=$(cargo run --bin psarc_extract -- "$1" list | grep ".wem")
 
 export RUST_LOG=trace
 
-echo "$FILES" | while read -r line
+echo "$FILES" | tac | while read -r line
 do
 	echo "$line"
 

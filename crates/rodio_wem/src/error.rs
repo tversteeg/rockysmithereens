@@ -3,6 +3,7 @@ use std::{
     string::FromUtf8Error,
 };
 
+use lewton::{audio::AudioReadError, header::HeaderReadError};
 use nom::{error::VerboseError, Err};
 use rodio::decoder::DecoderError;
 use thiserror::Error;
@@ -21,6 +22,10 @@ pub enum WemError {
     NotVorbis,
     #[error("rodio decoder error: {0}")]
     Rodio(#[from] DecoderError),
+    #[error("lewton header reading error: {0}")]
+    LewtonHeadRead(#[from] HeaderReadError),
+    #[error("audio reading error: {0}")]
+    AudioReadError(#[from] AudioReadError),
     #[error("parsing error: {0}")]
     Nom(String),
     #[error("writing bytes error: {0}")]

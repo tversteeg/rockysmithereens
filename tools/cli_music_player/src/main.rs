@@ -1,14 +1,14 @@
 use std::{
     fs::File,
-    io::{BufReader, Cursor, Read, Write},
+    io::{Read},
     path::PathBuf,
     time::Duration,
 };
 
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::{Parser};
 use rockysmithereens_parser::SongFile;
-use rodio::{Decoder, OutputStream, Source};
+use rodio::{OutputStream, Source};
 use rodio_wem::WemDecoder;
 
 /// Command line arguments.

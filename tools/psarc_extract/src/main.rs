@@ -7,6 +7,7 @@ use std::{
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use psarc::PlaystationArchive;
+use rodio_wem::WemDecoder;
 
 /// Command line arguments.
 #[derive(Parser, Debug)]
@@ -25,6 +26,15 @@ enum Commands {
     List,
     /// Export a specific file to the target destination.
     Extract {
+        /// Which file to export.
+        #[clap(value_parser)]
+        path: String,
+        /// Target destination of the file.
+        #[clap(value_parser)]
+        target: PathBuf,
+    },
+    /// Convert a music file to an ogg/vorbis file.
+    ConvertOgg {
         /// Which file to export.
         #[clap(value_parser)]
         path: String,
@@ -54,6 +64,20 @@ fn main() -> Result<()> {
             let extracted = archive.read_file(path_index)?;
 
             let mut target_file = File::create(&target)?;
+            target_file.write_all(&extracted)?;
+
+            println!("written to {:?}", target);
+        }
+        Commands::ConvertOgg { path, target } => {
+            let path_index = archive.index_for_path(&path).expect("path not in archive");
+            let extracted = archive.read_file(path_index)?;
+
+            let mut target_file = File::create(&target)?;
+
+            log::info!("parsing as vorbis");
+
+            let decoder = WemDecoder::new(&extracted)?;
+
             target_file.write_all(&extracted)?;
 
             println!("written to {:?}", target);
