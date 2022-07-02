@@ -59,7 +59,7 @@ impl SongFile {
 
     /// Get the bytes from the music embedded with the chosen song.
     pub fn wem(&self, index: usize) -> Result<Vec<u8>> {
-        let path = self.entities[index]
+        let _path = self.entities[index]
             .sng_asset
             .as_ref()
             .ok_or_else(|| RocksmithArchiveError::MissingData("wem".into()))?;

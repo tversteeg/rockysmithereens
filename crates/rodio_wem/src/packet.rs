@@ -1,7 +1,7 @@
 use bitvec::{order::Lsb0, prelude::BitVec, view::BitView};
 use nom::{
     error::context,
-    number::complete::{le_u16, le_u32},
+    number::complete::{le_u16},
 };
 
 use crate::{

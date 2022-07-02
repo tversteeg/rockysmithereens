@@ -3,7 +3,7 @@ mod utils;
 
 use std::{
     fmt::{Debug, Formatter},
-    io::{Cursor, Read, Write},
+    io::{Cursor, Write},
 };
 
 use aes::{
@@ -14,12 +14,10 @@ use cfb_mode::Decryptor;
 pub use error::{ArchiveReadError, Result};
 use flate2::read::ZlibDecoder;
 use nom::{
-    branch::alt,
-    bytes::complete::{take, take_till},
-    combinator::{eof, opt, rest},
+    bytes::complete::take,
     error::{context, VerboseError},
     multi::count,
-    number::complete::{be_u128, be_u16, be_u32, be_u64, le_u16},
+    number::complete::{be_u128, be_u16, be_u32},
     IResult,
 };
 use semver::Version;
@@ -149,7 +147,7 @@ impl PlaystationArchive {
         let mut chunk = all_block_bytes;
         for block_index in block_start..block_start + total_blocks {
             // Get the block size from the blocks
-            let block_length = self.block_sizes.get(block_index).unwrap_or_else(|| &0);
+            let block_length = self.block_sizes.get(block_index).unwrap_or(&0);
 
             // Decrypt the blocks
             if *block_length == 0 {
@@ -228,7 +226,7 @@ impl PlaystationArchive {
         );
         let index = self
             .index_for_path_ending_with(&searchable_path)
-            .ok_or_else(|| ArchiveReadError::PathNotFound(searchable_path))?;
+            .ok_or(ArchiveReadError::PathNotFound(searchable_path))?;
 
         self.read_file(index)
     }
@@ -284,6 +282,11 @@ impl PlaystationArchive {
     /// Amount of files in the archive.
     pub fn len(&self) -> usize {
         self.file_entries.len()
+    }
+
+    /// Whether there are any files in the archive.
+    pub fn is_empty(&self) -> bool {
+        self.file_entries.is_empty()
     }
 
     /// Fill the entries with the lines from the manifest.
@@ -411,7 +414,7 @@ impl BlockSize {
     }
 
     /// Convert the blocksize to it's number representation.
-    pub fn to_u32(&self) -> u32 {
+    pub fn to_u32(self) -> u32 {
         match self {
             BlockSize::U16 => 65536,
             BlockSize::U24 => 16777216,
@@ -480,7 +483,6 @@ impl<'a> TableOfContent<'a> {
 /// Single file entry in the archive.
 #[derive(Clone)]
 struct FileEntry {
-    name_digest: [u8; 16],
     /// Will be set after manifest is parsed.
     path: String,
     /// Index in the block list size.
@@ -553,8 +555,7 @@ fn parse_archive_flags<'a>(i: &'a [u8]) -> IResult<&'a [u8], u32, VerboseError<&
 
 /// Parse file entry.
 fn parse_file_entry<'a>(i: &'a [u8]) -> IResult<&'a [u8], FileEntry, VerboseError<&'a [u8]>> {
-    let (i, name_digest_block) = context("file entry", be_u128)(i)?;
-    let name_digest = name_digest_block.to_be_bytes();
+    let (i, _name_digest_block) = context("file entry", be_u128)(i)?;
 
     let (i, index_list_size) = context("file entry index list size", be_u32)(i)?;
 
@@ -562,7 +563,6 @@ fn parse_file_entry<'a>(i: &'a [u8]) -> IResult<&'a [u8], FileEntry, VerboseErro
     let (i, offset) = context("file entry offset", utils::be_u40)(i)?;
 
     let file_entry = FileEntry {
-        name_digest,
         index_list_size,
         length,
         offset,

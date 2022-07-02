@@ -1,4 +1,4 @@
-use bitvec::{field::BitField, order::Lsb0, prelude::BitVec, view::BitView};
+use bitvec::{order::Lsb0, prelude::BitVec, view::BitView};
 use nom::{error::context, number::complete::le_u32};
 
 use crate::{

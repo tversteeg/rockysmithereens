@@ -1,7 +1,7 @@
 use bitvec::{
     field::BitField,
     macros::internal::funty::Integral,
-    order::{BitOrder, Lsb0},
+    order::{Lsb0},
     prelude::BitVec,
     slice::BitSlice,
     store::BitStore,

@@ -8,6 +8,6 @@ rodio_wem = { path = "../../crates/rodio_wem" }
 rockysmithereens_parser = { path = "../../crates/rockysmithereens_parser" }
 
 anyhow = "1.0.58"
-clap = { version = "3.2.7", features = ["derive"] }
+clap = { version = "3.2.8", features = ["derive"] }
 env_logger = "0.9.0"
 rodio = { version = "0.15.0", default-features = false, features = ["lewton", "vorbis"] }

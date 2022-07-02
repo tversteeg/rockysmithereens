@@ -1,6 +1,5 @@
 use std::{
-    fmt::{Debug, Display},
-    string::FromUtf8Error,
+    fmt::{Debug},
 };
 
 use lewton::{audio::AudioReadError, header::HeaderReadError};

@@ -3,14 +3,9 @@ mod error;
 mod packet;
 mod utils;
 
-use std::{
-    io::{Read, Seek, SeekFrom, Write},
-    thread::panicking,
-    time::{self, Duration},
-    vec::IntoIter,
-};
+use std::{io::Write, time::Duration, vec::IntoIter};
 
-use bitvec::{field::BitField, order::Lsb0, prelude::BitVec, view::BitView};
+use bitvec::{order::Lsb0, prelude::BitVec, view::BitView};
 use byteorder::{LittleEndian, WriteBytesExt};
 use error::WemError;
 use lewton::{
@@ -22,7 +17,6 @@ use nom::{
     branch::alt,
     bytes::complete::{tag, take},
     error::{context, VerboseError},
-    multi::many0,
     number::{
         complete::{u16, u32, u8},
         Endianness,
@@ -191,8 +185,7 @@ impl Iterator for WemDecoder {
         } else {
             self.read_packet()
                 .ok()
-                .map(|_| self.current_data.next())
-                .flatten()
+                .and_then(|_| self.current_data.next())
         }
     }
 
@@ -229,7 +222,7 @@ impl Fmt {
         bytes.write_u8(1)?;
 
         // Magic
-        bytes.write("vorbis".as_bytes())?;
+        bytes.write_all("vorbis".as_bytes())?;
 
         // Vorbis version
         bytes.write_u32::<LittleEndian>(0)?;
@@ -436,7 +429,7 @@ pub fn empty_comment_packet() -> Result<Vec<u8>> {
     bytes.write_u8(3)?;
 
     // Magic
-    bytes.write("vorbis".as_bytes())?;
+    bytes.write_all("vorbis".as_bytes())?;
 
     // Vendor
     let vendor = format!(
@@ -445,7 +438,7 @@ pub fn empty_comment_packet() -> Result<Vec<u8>> {
         env!("CARGO_PKG_VERSION")
     );
     bytes.write_u32::<LittleEndian>(vendor.len() as u32)?;
-    bytes.write(vendor.as_bytes())?;
+    bytes.write_all(vendor.as_bytes())?;
 
     // No loop count, so no comments
     bytes.write_u32::<LittleEndian>(0)?;

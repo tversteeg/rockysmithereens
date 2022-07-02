@@ -1,12 +1,7 @@
-use std::{
-    fs::File,
-    io::{Read},
-    path::PathBuf,
-    time::Duration,
-};
+use std::{fs::File, io::Read, path::PathBuf, time::Duration};
 
 use anyhow::Result;
-use clap::{Parser};
+use clap::Parser;
 use rockysmithereens_parser::SongFile;
 use rodio::{OutputStream, Source};
 use rodio_wem::WemDecoder;

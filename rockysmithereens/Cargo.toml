@@ -8,7 +8,7 @@ default-run = "rockysmithereens"
 anyhow = "1.0.58"
 bevy = "0.7.0"
 bevy_egui = "0.14.0"
-clap = { version = "3.2.7", features = ["derive"] }
+clap = { version = "3.2.8", features = ["derive"] }
 rfd = "0.9.1"
 rockysmithereens_parser = { path = "../crates/rockysmithereens_parser" }
 

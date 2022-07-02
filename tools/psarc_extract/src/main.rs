@@ -7,7 +7,6 @@ use std::{
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use psarc::PlaystationArchive;
-use rodio_wem::WemDecoder;
 
 /// Command line arguments.
 #[derive(Parser, Debug)]
@@ -68,19 +67,8 @@ fn main() -> Result<()> {
 
             println!("written to {:?}", target);
         }
-        Commands::ConvertOgg { path, target } => {
-            let path_index = archive.index_for_path(&path).expect("path not in archive");
-            let extracted = archive.read_file(path_index)?;
-
-            let mut target_file = File::create(&target)?;
-
-            log::info!("parsing as vorbis");
-
-            let decoder = WemDecoder::new(&extracted)?;
-
-            target_file.write_all(&extracted)?;
-
-            println!("written to {:?}", target);
+        Commands::ConvertOgg { path: _, target: _ } => {
+            todo!();
         }
     }
 

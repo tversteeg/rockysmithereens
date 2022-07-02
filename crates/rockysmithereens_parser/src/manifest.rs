@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use psarc::{ArchiveReadError, PlaystationArchive};
+use psarc::{PlaystationArchive};
 use serde::Deserialize;
-use serde_json::Value;
+
 
 use crate::error::Result;
 

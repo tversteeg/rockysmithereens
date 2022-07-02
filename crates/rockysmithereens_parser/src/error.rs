@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 
 use psarc::ArchiveReadError;
 use quick_xml::de::DeError;

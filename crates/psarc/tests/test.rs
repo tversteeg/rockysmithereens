@@ -17,7 +17,7 @@ fn test2() {
     assert_eq!(psarc.len(), 25);
 
     // Try parsing all files
-    psarc.paths_iter().enumerate().for_each(|(index, _)| {
+    psarc.paths_iter().enumerate().for_each(|(_index, _)| {
         // TODO: fix
         //psarc.read_file(index).unwrap();
     });
