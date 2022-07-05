@@ -79,4 +79,9 @@ impl SongFile {
     pub fn vorbis(&self, index: usize) -> Result<WemDecoder> {
         Ok(WemDecoder::new(&self.wem(index)?)?)
     }
+
+    /// Path for the album art file.
+    pub fn album_art_path(&self) -> Result<String> {
+        Ok("gfxassets/album_art/album_witchcraftsong_256.dds".into())
+    }
 }

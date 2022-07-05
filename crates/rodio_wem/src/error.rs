@@ -1,6 +1,4 @@
-use std::{
-    fmt::{Debug},
-};
+use std::fmt::Debug;
 
 use lewton::{audio::AudioReadError, header::HeaderReadError};
 use nom::{error::VerboseError, Err};

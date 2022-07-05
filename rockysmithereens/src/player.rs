@@ -1,24 +1,52 @@
-use std::sync::Arc;
-
 use bevy::{
-    audio::{Audio, Decodable},
-    ecs::event::EventReader,
-    prelude::{AssetServer, Assets, Res, ResMut},
+    audio::{Audio, AudioSink},
+    input::Input,
+    prelude::{App, AssetServer, Assets, Commands, Handle, KeyCode, Plugin, Res, SystemSet},
 };
-use rodio_wem::WemDecoder;
 
-use crate::{asset::RocksmithAsset, event::LoadedEvent, State};
+use crate::{wem::WemSource, Phase};
+
+/// Music player event handler.
+#[derive(Debug, Default)]
+pub struct MusicController(Handle<AudioSink>);
+
+/// Bevy plugin for the audio player.
+#[derive(Debug)]
+pub struct PlayerPlugin;
+
+impl Plugin for PlayerPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<MusicController>()
+            .add_system_set(SystemSet::on_enter(Phase::Playing).with_system(loaded_listener))
+            .add_system_set(SystemSet::on_update(Phase::Playing).with_system(pause));
+    }
+}
+
+/// Pause the music.
+pub fn pause(
+    keyboard_input: Res<Input<KeyCode>>,
+    audio_sinks: Res<Assets<AudioSink>>,
+    music_controller: Res<MusicController>,
+) {
+    if keyboard_input.just_pressed(KeyCode::Space) {
+        if let Some(sink) = audio_sinks.get(&music_controller.0) {
+            if sink.is_paused() {
+                sink.play()
+            } else {
+                sink.pause()
+            }
+        }
+    }
+}
 
 /// Listen for the loaded event.
 pub fn loaded_listener(
-    mut events: EventReader<LoadedEvent>,
-
+    mut commands: Commands,
     asset_server: Res<AssetServer>,
-    audio: Res<Audio>,
+    audio: Res<Audio<WemSource>>,
+    sinks: Res<Assets<AudioSink>>,
 ) {
-    for _ in events.iter() {
-        let music = asset_server.load("audio/windows/2147314675.wem");
-        dbg!(&music);
-        audio.play(music);
-    }
+    let music = asset_server.load("audio/mac/1867869353.wem");
+    let handle = sinks.get_handle(audio.play(music));
+    commands.insert_resource(MusicController(handle));
 }

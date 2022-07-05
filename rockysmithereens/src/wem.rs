@@ -1,3 +1,5 @@
+
+
 use anyhow::Result;
 use bevy::{
     asset::{AddAsset, AssetLoader, BoxedFuture, LoadContext, LoadedAsset},
@@ -7,25 +9,20 @@ use bevy::{
 };
 use rodio_wem::WemDecoder;
 
+
+
 /// Bevy source for playing wem files.
 #[derive(Debug, Clone, TypeUuid)]
-#[uuid = "40cadc56-aa9c-4543-8640-a018b74b5052"]
+#[uuid = "af6466c2-a9f4-11eb-bcbc-0242ac130002"]
 pub struct WemSource {
     pub bytes: Vec<u8>,
 }
 
-impl AsRef<[u8]> for WemSource {
-    fn as_ref(&self) -> &[u8] {
-        &self.bytes
-    }
-}
-
 impl Decodable for WemSource {
     type Decoder = WemDecoder;
-    type DecoderItem = i16;
+    type DecoderItem = <Self::Decoder as Iterator>::Item;
 
     fn decoder(&self) -> Self::Decoder {
-        dbg!("bla");
         // TODO: handle errors
         WemDecoder::new(&self.bytes).unwrap()
     }
@@ -41,16 +38,13 @@ impl AssetLoader for WemLoader {
         bytes: &'a [u8],
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<()>> {
-        Box::pin(async move {
-            dbg!("bla");
-            let source = WemSource {
-                bytes: bytes.to_vec(),
-            };
+        let source = WemSource {
+            bytes: bytes.to_vec(),
+        };
 
-            load_context.set_default_asset(LoadedAsset::new(source));
+        load_context.set_default_asset(LoadedAsset::new(source));
 
-            Ok(())
-        })
+        Box::pin(async move { Ok(()) })
     }
 
     fn extensions(&self) -> &[&str] {
@@ -66,11 +60,11 @@ impl Plugin for WemPlugin {
     fn build(&self, app: &mut App) {
         app.init_non_send_resource::<AudioOutput<WemSource>>()
             .add_asset::<WemSource>()
-            .init_asset_loader::<WemLoader>()
             .init_resource::<Audio<WemSource>>()
             .add_system_to_stage(
                 CoreStage::PostUpdate,
                 bevy::audio::play_queued_audio_system::<WemSource>.exclusive_system(),
-            );
+            )
+            .init_asset_loader::<WemLoader>();
     }
 }

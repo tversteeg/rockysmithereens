@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
-use psarc::{PlaystationArchive};
+use psarc::PlaystationArchive;
 use serde::Deserialize;
-
 
 use crate::error::Result;
 
@@ -10,9 +9,9 @@ use crate::error::Result;
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Manifest {
-    insert_root: String,
-    model_name: String,
-    iteration_version: u16,
+    pub insert_root: String,
+    pub model_name: String,
+    pub iteration_version: u16,
     entries: HashMap<String, Entry>,
 }
 

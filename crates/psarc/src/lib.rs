@@ -220,7 +220,7 @@ impl PlaystationArchive {
         log::debug!("reading file with path '{}'", path);
 
         let index = self
-            .index_for_path(&path)
+            .index_for_path(path)
             .ok_or(ArchiveReadError::PathNotFound(path.to_string()))?;
 
         self.read_file(index)

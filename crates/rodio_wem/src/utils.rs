@@ -1,11 +1,6 @@
 use bitvec::{
-    field::BitField,
-    macros::internal::funty::Integral,
-    order::{Lsb0},
-    prelude::BitVec,
-    slice::BitSlice,
-    store::BitStore,
-    view::BitView,
+    field::BitField, macros::internal::funty::Integral, order::Lsb0, prelude::BitVec,
+    slice::BitSlice, store::BitStore, view::BitView,
 };
 
 /// Read bits from bit slice and return the rest of the slice.

@@ -1,27 +1,15 @@
 use std::{
     path::{Path, PathBuf},
-    sync::Mutex,
 };
 
 use bevy::{
     asset::{AssetIo, AssetIoError, BoxedFuture},
-    prelude::{App, AssetServer, Assets, EventReader, EventWriter, Plugin, Res, ResMut},
-    tasks::{IoTaskPool, TaskPool},
-};
-use rockysmithereens_parser::SongFile;
-
-use crate::{
-    asset::RocksmithAsset,
-    event::{LoadedEvent, StartEvent},
-    State,
+    prelude::{App, AssetServer, Plugin},
+    tasks::IoTaskPool,
 };
 
-// TODO: add this to the filesystem struct, needs an bevy update where the current asset loader can
-// be accessed in a mutable way
-lazy_static::lazy_static! {
-/// The song state.
-    pub static ref LOADED_SONG: Mutex<Option<SongFile>> = Mutex::new(None);
-}
+
+use crate::{LOADED_SONG};
 
 /// Rocksmith archive representing a bevy virtual file system.
 pub struct Filesystem {
@@ -83,25 +71,6 @@ impl Plugin for FilesystemPlugin {
             .0
             .clone();
 
-        app.insert_resource(AssetServer::new(asset_io, task_pool))
-            .add_system(song_loaded_listener);
-    }
-}
-
-/// Event listener for switching to the song virtual filesystem.
-pub fn song_loaded_listener(
-    mut start_events: EventReader<StartEvent>,
-    mut loaded_events: EventWriter<LoadedEvent>,
-    state: ResMut<State>,
-    mut rocksmith_assets: ResMut<Assets<RocksmithAsset>>,
-) {
-    for _ in start_events.iter() {
-        // Move the asset to this filesystem
-        let asset = rocksmith_assets.remove(&state.handle);
-        if let Some(file) = asset {
-            *LOADED_SONG.lock().unwrap() = Some(file.0);
-
-            loaded_events.send_default();
-        }
+        app.insert_resource(AssetServer::new(asset_io, task_pool));
     }
 }

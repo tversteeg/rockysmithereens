@@ -8,8 +8,9 @@ default-run = "rockysmithereens"
 rodio_wem = { path = "../crates/rodio_wem" }
 rockysmithereens_parser = { path = "../crates/rockysmithereens_parser" }
 anyhow = "1.0.58"
-bevy = { version = "0.7.0", default-features = false, features = ["render", "bevy_audio", "bevy_winit", "x11"] }
+bevy = { version = "0.7.0", default-features = false, features = ["render", "bevy_audio", "bevy_winit", "x11", "dds"] }
 bevy_egui = "0.14.0"
 clap = { version = "3.2.8", features = ["derive"] }
 rfd = "0.9.1"
 lazy_static = "1.4.0"
+rodio = { version = "0.15.0", default-features = false }
