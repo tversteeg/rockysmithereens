@@ -1,9 +1,11 @@
+pub mod arrangement_select;
+pub mod in_game;
+pub mod phrases_plot;
+pub mod song_select;
+
 use bevy::prelude::{App, Plugin, SystemSet};
 
 use crate::Phase;
-
-pub mod arrangement_select;
-pub mod song_select;
 
 /// Bevy plugin for the UI.
 #[derive(Debug)]
@@ -17,6 +19,7 @@ impl Plugin for UiPlugin {
         .add_system_set(
             SystemSet::on_update(Phase::ArrangementSelectionMenu)
                 .with_system(arrangement_select::ui),
-        );
+        )
+        .add_system_set(SystemSet::on_update(Phase::Playing).with_system(in_game::ui));
     }
 }

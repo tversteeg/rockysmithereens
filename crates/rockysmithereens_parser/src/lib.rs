@@ -1,5 +1,5 @@
 mod error;
-mod manifest;
+pub mod manifest;
 mod xblock;
 
 use manifest::Manifest;
@@ -24,7 +24,7 @@ impl SongFile {
     pub fn parse(file: &[u8]) -> Result<Self> {
         // Parse the playstation archive file
         let archive = PlaystationArchive::parse(file)?;
-        dbg!(archive.paths_iter().collect::<Vec<_>>());
+        dbg!(archive.paths_iter().next());
 
         // Get the xblock file
         let xblock_indices = archive
@@ -51,6 +51,7 @@ impl SongFile {
                     .map(|manifest_path| Manifest::parse(&archive, manifest_path))
             })
             .collect::<Result<_>>()?;
+        dbg!(&manifests);
 
         Ok(Self {
             manifests,
@@ -81,7 +82,17 @@ impl SongFile {
     }
 
     /// Path for the album art file.
-    pub fn album_art_path(&self) -> Result<String> {
-        Ok("gfxassets/album_art/album_witchcraftsong_256.dds".into())
+    pub fn album_art_path(&self) -> Option<&str> {
+        self.archive
+            .path_ending_with("256.dds")
+            .or_else(|| self.archive.path_ending_with("128.dds"))
+            .or_else(|| self.archive.path_ending_with("64.dds"))
+    }
+
+    /// Path for the vorbis wem file.
+    pub fn song_path(&self) -> &str {
+        self.archive
+            .path_ending_with(".wem")
+            .expect("No song file in psarc")
     }
 }

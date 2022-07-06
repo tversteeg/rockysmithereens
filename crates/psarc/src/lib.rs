@@ -274,6 +274,17 @@ impl PlaystationArchive {
             .map(|(i, _)| i)
     }
 
+    /// Get the full path name for a path ending with the string.
+    pub fn path_ending_with(&self, path: &str) -> Option<&str> {
+        self.index_for_path_ending_with(path)
+            .map(|index| {
+                self.file_entries
+                    .get(index)
+                    .map(|entry| entry.path.as_str())
+            })
+            .flatten()
+    }
+
     /// All file paths as an iterator.
     pub fn paths_iter(&'_ self) -> impl Iterator<Item = &'_ String> {
         self.file_entries.iter().map(|entry| &entry.path)
@@ -300,19 +311,6 @@ impl PlaystationArchive {
         self.file_entries.is_empty()
     }
 
-    /// Fill the entries with the lines from the manifest.
-    fn parse_manifest(&mut self) -> Result<()> {
-        log::debug!("reading manifest");
-
-        // Convert the lines to a vector of strings
-        std::iter::once("manifest.txt")
-            .chain(self.read_file_as_string(0)?.lines())
-            .enumerate()
-            .for_each(|(i, line)| self.file_entries[i].path = line.to_string());
-
-        Ok(())
-    }
-
     /// Fill the file entry sizes with the calculated total size.
     pub fn calculate_file_entry_sizes(&mut self) -> Result<()> {
         // Calculate the input lengths for the every but the last item
@@ -334,6 +332,19 @@ impl PlaystationArchive {
         if let Some(mut last_entry) = self.file_entries.last_mut() {
             last_entry.input_length = self.data.len() - last_entry.offset as usize;
         }
+
+        Ok(())
+    }
+
+    /// Fill the entries with the lines from the manifest.
+    fn parse_manifest(&mut self) -> Result<()> {
+        log::debug!("reading manifest");
+
+        // Convert the lines to a vector of strings
+        std::iter::once("manifest.txt")
+            .chain(self.read_file_as_string(0)?.lines())
+            .enumerate()
+            .for_each(|(i, line)| self.file_entries[i].path = line.to_string());
 
         Ok(())
     }

@@ -12,7 +12,7 @@ use bevy::{
     prelude::{AddAsset, App, AssetServer, Assets, Handle, Res, ResMut},
     DefaultPlugins,
 };
-use bevy_egui::{EguiPlugin};
+use bevy_egui::EguiPlugin;
 use clap::Parser;
 use filesystem::FilesystemPlugin;
 use player::PlayerPlugin;
@@ -50,8 +50,10 @@ pub struct State {
     current_song: Option<usize>,
 }
 
+// TODO: figure out how to make this a resource, the current problem is that AssetIo doesn't accept
+// any state
 lazy_static::lazy_static! {
-/// The song state.
+    /// The song state.
     pub static ref LOADED_SONG: Mutex<Option<SongFile>> = Mutex::new(None);
 }
 

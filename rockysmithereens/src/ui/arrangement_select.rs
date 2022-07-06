@@ -1,6 +1,6 @@
 use bevy::prelude::{AssetServer, Assets, Handle, Image as BevyImage, Local, Res, ResMut};
 use bevy_egui::{
-    egui::{CentralPanel, Image, TextureId},
+    egui::{CentralPanel, Image, ScrollArea, TextureId},
     EguiContext,
 };
 
@@ -19,40 +19,45 @@ pub fn ui(
     if let Some(song) = &*LOADED_SONG.lock().unwrap() {
         if assets.get(album_art_image_handle.clone_weak()).is_none() {
             // Load the album art
-            *album_art_image_handle = asset_server.load(&song.album_art_path().unwrap());
-            *album_art_texture = Some(context.add_image(album_art_image_handle.clone_weak()));
+            if let Some(path) = song.album_art_path() {
+                *album_art_image_handle = asset_server.load(path);
+                *album_art_texture = Some(context.add_image(album_art_image_handle.clone_weak()));
+            }
         }
 
         // A song has been loaded
         CentralPanel::default().show(context.ctx_mut(), |ui| {
-            ui.group(|ui| {
-                // Get the first manifest for the song information
-                if let Some(manifest) = song.manifests.get(0) {
-                    let attributes = manifest.attributes();
-
-                    ui.horizontal_wrapped(|ui| {
-                        ui.label(&attributes.song_name);
-                        ui.label("-");
-                        ui.label(&attributes.artist_name);
-                        ui.label("-");
-                        ui.label(&attributes.album_name);
-                    });
-
-                    ui.label(&format!(
-                        "{} min {} sec",
-                        (attributes.song_length / 60.0).ceil(),
-                        (attributes.song_length % 60.0).ceil()
-                    ));
-
+            // Get the first manifest for the song information
+            if let Some(manifest) = song.manifests.get(0) {
+                ui.horizontal(|ui| {
                     // Show the album art if loaded
                     if let Some(album_art_texture) = *album_art_texture {
                         ui.add(Image::new(album_art_texture, [128.0, 128.0]));
                     }
-                }
 
-                // List the different songs
+                    ui.vertical(|ui| {
+                        let attributes = manifest.attributes();
+                        ui.horizontal_wrapped(|ui| {
+                            ui.label(&attributes.song_name);
+                            ui.label("-");
+                            ui.label(&attributes.artist_name);
+                            ui.label("-");
+                            ui.label(&attributes.album_name);
+                        });
+
+                        ui.label(&format!(
+                            "{} min {} sec",
+                            (attributes.song_length / 60.0).ceil(),
+                            (attributes.song_length % 60.0).ceil()
+                        ));
+                    });
+                });
+            }
+
+            // List the different songs
+            ScrollArea::vertical().show(ui, |ui| {
                 for (i, manifest) in song.manifests.iter().enumerate() {
-                    ui.horizontal_wrapped(|ui| {
+                    ui.group(|ui| {
                         let attributes = manifest.attributes();
 
                         if ui.button(&attributes.arrangement_name).clicked() {
@@ -60,6 +65,9 @@ pub fn ui(
 
                             phase.set(Phase::Playing).unwrap();
                         }
+
+                        // Show the phrases
+                        super::phrases_plot::ui(ui, attributes, None);
                     });
                 }
             });
