@@ -1,7 +1,7 @@
 mod codebook;
 mod error;
-mod packet;
-mod utils;
+pub mod packet;
+pub mod utils;
 
 pub use error::WemError;
 
@@ -60,52 +60,32 @@ pub struct WemDecoder {
 impl WemDecoder {
     /// Attempts to decode the data as a wwise file containing vorbis.
     pub fn new(bytes: &[u8]) -> Result<WemDecoder> {
-        // Get the endianness
-        let (i, endianness) = parse_endianness_by_header(bytes)?;
-
-        // Get the size of the riff block
-        let (i, riff_size_u32) = context("endianness", u32(endianness))(i)?;
-        let _riff_size = riff_size_u32 as u64 + 8;
-
-        // Verify the next block is "WAVE"
-        let (i, _) = context("wave block", tag("WAVE"))(i)?;
-
-        // Read the chunks
-        let (_, chunks) = parse_chunks(i, endianness)?;
-
-        // Extract the required chunks
-        let fmt = chunks.fmt()?.clone();
-        let data = chunks.into_data()?;
+        let WemParser {
+            comment_header,
+            ident_header,
+            setup_header,
+            packets,
+            fmt,
+        } = WemParser::new(bytes)?;
 
         // Setup the headers
-        let ident = lewton::header::read_header_ident(&fmt.to_ident_packet()?)?;
-        let comment = lewton::header::read_header_comment(&empty_comment_packet()?)?;
-
-        let (setup_packet, mode_blockflag, mode_bits) =
-            create_setup_packet(endianness, &fmt, &data)?;
-
+        let ident = lewton::header::read_header_ident(&ident_header)?;
+        let comment = lewton::header::read_header_comment(&comment_header)?;
         let setup = lewton::header::read_header_setup(
-            &setup_packet,
+            &setup_header,
             fmt.channels as u8,
             (fmt.block_size_0, fmt.block_size_1),
-        )?;
-
-        // Parse the data into packets
-        let packets = packet::parse_into_packets(
-            &data[(fmt.first_audio_packet_offset as usize)..],
-            mode_blockflag,
-            mode_bits,
         )?;
 
         let previous_window = PreviousWindowRight::new();
 
         let mut this = Self {
             fmt,
-            packets,
             previous_window,
             ident,
             comment,
             setup,
+            packets,
             current_data: Vec::new().into_iter(),
             done: false,
             current_packet: 0,
@@ -113,6 +93,8 @@ impl WemDecoder {
 
         // The first read initializes lewton
         this.read_packet()?;
+        // Don't skip the first packet though
+        this.current_packet = 0;
 
         Ok(this)
     }
@@ -127,7 +109,6 @@ impl WemDecoder {
         let audio: InterleavedSamples<_> = lewton::audio::read_audio_packet_generic(
             &self.ident,
             &self.setup,
-            //&self.data[self.fmt.first_audio_packet_offset as usize..],
             &self.packets[self.current_packet].data,
             &mut self.previous_window,
         )?;
@@ -193,6 +174,68 @@ impl Iterator for WemDecoder {
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         (self.current_data.size_hint().0, None)
+    }
+}
+
+/// Wem file parser.
+///
+/// Deconstructs file in headers and different packets.
+#[derive(Debug)]
+pub struct WemParser {
+    /// Comment header bytes.
+    pub comment_header: Vec<u8>,
+    /// Identification header bytes.
+    pub ident_header: Vec<u8>,
+    /// Setup header bytes.
+    pub setup_header: Vec<u8>,
+    /// The different data packets.
+    pub packets: Vec<Packet>,
+    /// The fmt chunk.
+    ///
+    /// This is required to be one of the chunks.
+    fmt: Fmt,
+}
+
+impl WemParser {
+    /// Attempts to decode the data as a wwise file containing vorbis.
+    pub fn new(bytes: &[u8]) -> Result<Self> {
+        // Get the endianness
+        let (i, endianness) = parse_endianness_by_header(bytes)?;
+
+        // Get the size of the riff block
+        let (i, riff_size_u32) = context("endianness", u32(endianness))(i)?;
+        let _riff_size = riff_size_u32 as u64 + 8;
+
+        // Verify the next block is "WAVE"
+        let (i, _) = context("wave block", tag("WAVE"))(i)?;
+
+        // Read the chunks
+        let (_, chunks) = parse_chunks(i, endianness)?;
+
+        // Extract the required chunks
+        let fmt = chunks.fmt()?.clone();
+        let data = chunks.into_data()?;
+
+        // Setup the headers
+        let ident_header = fmt.to_ident_packet()?;
+        let comment_header = empty_comment_packet()?;
+        let (setup_header, mode_blockflag, mode_bits) =
+            create_setup_packet(endianness, &fmt, &data)?;
+
+        // Parse the data into packets
+        let packets = packet::parse_into_packets(
+            &data[(fmt.first_audio_packet_offset as usize)..],
+            mode_blockflag,
+            mode_bits,
+        )?;
+
+        Ok(Self {
+            comment_header,
+            ident_header,
+            setup_header,
+            packets,
+            fmt,
+        })
     }
 }
 

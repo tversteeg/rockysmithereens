@@ -1,3 +1,5 @@
+mod ogg;
+
 use std::{
     fs::File,
     io::{Read, Write},
@@ -59,16 +61,21 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::List => archive.paths_iter().for_each(|file| println!("{}", file)),
         Commands::Extract { path, target } => {
-            let path_index = archive.index_for_path(&path).expect("path not in archive");
-            let extracted = archive.read_file(path_index)?;
+            let extracted = archive.read_file_with_path(&path)?;
 
             let mut target_file = File::create(&target)?;
             target_file.write_all(&extracted)?;
 
             println!("written to {:?}", target);
         }
-        Commands::ConvertOgg { path: _, target: _ } => {
-            todo!();
+        Commands::ConvertOgg { path, target } => {
+            let extracted = archive.read_file_with_path(&path)?;
+            let ogg = ogg::convert_bytes(&extracted)?;
+
+            let mut target_file = File::create(&target)?;
+            target_file.write_all(&ogg)?;
+
+            println!("written to {:?}", target);
         }
     }
 

@@ -16,7 +16,10 @@ use crate::{
 pub struct SongFile {
     pub entities: Vec<SimplifiedEntity>,
     pub manifests: Vec<Manifest>,
+    /// Archive containing all the files.
     pub archive: PlaystationArchive,
+    /// The path to the song file.
+    song_path: String,
 }
 
 impl SongFile {
@@ -24,7 +27,6 @@ impl SongFile {
     pub fn parse(file: &[u8]) -> Result<Self> {
         // Parse the playstation archive file
         let archive = PlaystationArchive::parse(file)?;
-        dbg!(archive.paths_iter().next());
 
         // Get the xblock file
         let xblock_indices = archive
@@ -51,12 +53,33 @@ impl SongFile {
                     .map(|manifest_path| Manifest::parse(&archive, manifest_path))
             })
             .collect::<Result<_>>()?;
-        dbg!(&manifests);
+
+        // Find the song path
+        let urn_path = self.entities[0]
+            .sound_bank
+            .as_ref()
+            .expect("No sound bank file");
+
+        // Get the filename from the urn path
+        let urn_filename = urn_path.split(":").last().expect("Invalid URN path");
+
+        // Get the path of the bnk file
+        let bnk_path = self
+            .archive
+            .path_ending_with(&format!("{}.bnk", urn_filename))
+            .expect("No song file in psarc");
+
+        // Get the wem filename from the bnk file
+        let wem_filenames = bnk::wem_filenames(&self.archive.read_file_with_path(bnk_path)?)?;
+
+        // Construct the full path
+        let song_path = self.archive.path_ending_with(wem_filenames[0]);
 
         Ok(Self {
             manifests,
             entities,
             archive,
+            song_path,
         })
     }
 
@@ -67,12 +90,7 @@ impl SongFile {
 
     /// Get the bytes from the music embedded with the chosen song.
     pub fn wem(&self, index: usize) -> Result<Vec<u8>> {
-        let _path = self.entities[index]
-            .sng_asset
-            .as_ref()
-            .ok_or_else(|| RocksmithArchiveError::MissingData("wem".into()))?;
-
-        Ok(self.archive.read_rs_file("", "wem")?)
+        Ok(self.archive.read_file_with_path(self.song_path())?)
     }
 
     /// Get the bytes from the music embedded with the chosen song and recode it to a proper vorbis
@@ -91,8 +109,6 @@ impl SongFile {
 
     /// Path for the vorbis wem file.
     pub fn song_path(&self) -> &str {
-        self.archive
-            .path_ending_with(".wem")
-            .expect("No song file in psarc")
+        &self.song_path
     }
 }

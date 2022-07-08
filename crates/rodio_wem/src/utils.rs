@@ -67,14 +67,8 @@ where
 }
 
 /// Non-nightly `u32::log2'.
-pub fn log2(mut value: u32) -> u32 {
-    let mut ret = 0;
-    while value != 0 {
-        ret += 1;
-        value >>= 1;
-    }
-
-    ret
+pub fn log2(value: u32) -> u32 {
+    32 - value.leading_zeros()
 }
 
 #[cfg(test)]

@@ -152,7 +152,7 @@ impl<'a> CodebookLibrary<'a> {
 
     /// Get the amount of quant values that should be parsed.
     pub fn quantvals(entries: u32, dimensions: u32) -> u32 {
-        let bits = log2(entries);
+        let bits = log2(entries) as u32;
         let mut vals = entries >> ((bits - 1) * (dimensions - 1) / dimensions);
 
         loop {
