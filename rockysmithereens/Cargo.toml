@@ -14,3 +14,7 @@ clap = { version = "3.2.8", features = ["derive"] }
 rfd = "0.9.1"
 lazy_static = "1.4.0"
 rodio = { version = "0.15.0", default-features = false }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+tracing-wasm = "0.2.1"
+console_error_panic_hook = "0.1.7"

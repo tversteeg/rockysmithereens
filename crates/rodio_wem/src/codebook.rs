@@ -63,7 +63,20 @@ impl<'a> CodebookLibrary<'a> {
         // Ordered flag
         let (mut i, ordered) = read_write_bool(i, &mut out);
         if ordered {
-            todo!();
+            let _initial_length: u8;
+            (i, _initial_length) = read_write(i, &mut out, 5);
+
+            let mut current_entry = 0;
+            while current_entry < entry_count {
+                let number: u32;
+                (i, number) = read_write(
+                    i,
+                    &mut out,
+                    crate::utils::log2(entry_count - current_entry) as usize,
+                );
+
+                current_entry += number;
+            }
         } else {
             // Codewords
             let codeword_lengths_length: u8;

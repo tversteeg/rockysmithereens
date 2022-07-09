@@ -1,10 +1,10 @@
-use bevy::prelude::{AssetServer, Assets, Handle, Image as BevyImage, Local, Res, ResMut};
+use bevy::prelude::{Res, ResMut};
 use bevy_egui::{
-    egui::{CentralPanel, Image, ScrollArea, TextureId, TopBottomPanel},
+    egui::{TopBottomPanel},
     EguiContext,
 };
 
-use crate::{player::MusicController, Phase, State, LOADED_SONG};
+use crate::{player::MusicController, State, LOADED_SONG};
 
 /// The UI for selecting an arrangement for the song.
 pub fn ui(mut context: ResMut<EguiContext>, state: Res<State>, controller: Res<MusicController>) {

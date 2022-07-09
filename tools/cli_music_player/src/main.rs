@@ -37,8 +37,7 @@ fn main() -> Result<()> {
     );
 
     // Convert the raw song binary to an audio source
-    let file = song.wem(0)?;
-    let decoder = WemDecoder::new(&file)?;
+    let decoder = song.music_decoder()?;
 
     // Play the song
     let (_stream, stream_handle) = OutputStream::try_default()?;

@@ -34,4 +34,17 @@ cargo run --bin psarc_extract -- example_file.psarc list
 cargo run --bin psarc_extract -- example_file.psarc extract example/path/from/above/command output_file.ext 
 ```
 
+## Build
 
+### WebAssembly
+
+```sh
+rustup target add wasm32-unknown-unknown
+cargo install wasm-bindgen-cli
+
+cargo build --release --target wasm32-unknown-unknown
+wasm-bindgen --out-name rockysmithereens --out-dir web --target web target/wasm32-unknown-unknown/release/rockysmithereens.wasm
+
+cargo install basic-http-server
+(cd web && basic-http-server)
+```

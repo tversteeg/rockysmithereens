@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use bevy_egui::egui::{
-    plot::{Bar, BarChart, Legend, Line, Plot, VLine, Value, Values},
-    Color32, Stroke, Ui, Vec2,
+    plot::{Bar, BarChart, Legend, Plot, VLine},
+    Color32, Ui, Vec2,
 };
 use rockysmithereens_parser::manifest::Attributes;
 
@@ -44,7 +44,7 @@ pub fn ui(ui: &mut Ui, attributes: &Attributes, time_playing: Option<Duration>) 
         .height(70.0)
         .legend(Legend::default().position(bevy_egui::egui::plot::Corner::LeftTop))
         // Always scale properly
-        .include_y(20.0)
+        .include_y(30.0)
         // Always show the numbers
         .include_y(0.0)
         .include_x(0.0)

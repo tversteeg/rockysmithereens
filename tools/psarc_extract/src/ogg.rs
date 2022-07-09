@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use anyhow::Result;
 use rodio_wem::WemParser;
 
@@ -48,6 +46,4 @@ fn flush(bytes: &[u8], ogg: &mut Vec<u8>, is_last: bool) -> Result<()> {
     ogg.push(first | last);
 
     todo!();
-
-    Ok(())
 }

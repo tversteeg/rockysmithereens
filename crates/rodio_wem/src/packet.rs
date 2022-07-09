@@ -1,5 +1,5 @@
 use bitvec::{order::Lsb0, prelude::BitVec, view::BitView};
-use byteorder::WriteBytesExt;
+
 use nom::{error::context, number::complete::le_u16};
 
 use crate::{

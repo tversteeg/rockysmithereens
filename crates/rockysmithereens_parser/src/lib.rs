@@ -1,10 +1,12 @@
 mod error;
 pub mod manifest;
-mod xblock;
+pub mod song_xml;
+pub mod xblock;
 
 use manifest::Manifest;
-use psarc::PlaystationArchive;
+use psarc::{ArchiveReadError, PlaystationArchive};
 use rodio_wem::WemDecoder;
+use song_xml::SongXml;
 
 use crate::{
     error::{Result, RocksmithArchiveError},
@@ -39,9 +41,15 @@ impl SongFile {
 
         // TODO: handle multiple block files
         let xblock = Xblock::parse(&archive.read_file_as_string(xblock_indices[0])?)?;
+        dbg!(&xblock);
 
         // Get the required song properties
         let entities = xblock.simplified_entities_iter().collect::<Vec<_>>();
+        if entities.is_empty() {
+            return Err(RocksmithArchiveError::MissingData(
+                "xblock entities".to_string(),
+            ));
+        }
 
         // TODO: place this in a more logical place, with async loading
         let manifests = entities
@@ -54,26 +62,27 @@ impl SongFile {
             })
             .collect::<Result<_>>()?;
 
-        // Find the song path
-        let urn_path = self.entities[0]
-            .sound_bank
-            .as_ref()
-            .expect("No sound bank file");
-
-        // Get the filename from the urn path
-        let urn_filename = urn_path.split(":").last().expect("Invalid URN path");
-
-        // Get the path of the bnk file
-        let bnk_path = self
-            .archive
-            .path_ending_with(&format!("{}.bnk", urn_filename))
-            .expect("No song file in psarc");
+        // Get the song bank
+        let bnk_bytes = read_urn_file(
+            &archive,
+            &entities[0]
+                .sound_bank
+                .as_ref()
+                .ok_or_else(|| RocksmithArchiveError::MissingData("bnk file".to_string()))?,
+            "bnk",
+        )?;
 
         // Get the wem filename from the bnk file
-        let wem_filenames = bnk::wem_filenames(&self.archive.read_file_with_path(bnk_path)?)?;
+        let wem_filenames = bnk::wem_filenames(&bnk_bytes)?;
+        if wem_filenames.is_empty() {
+            return Err(RocksmithArchiveError::MissingData("bnk".to_string()));
+        }
 
         // Construct the full path
-        let song_path = self.archive.path_ending_with(wem_filenames[0]);
+        let song_path = archive
+            .path_ending_with(&wem_filenames[0])
+            .ok_or_else(|| ArchiveReadError::PathNotFound(wem_filenames[0].clone()))?
+            .to_string();
 
         Ok(Self {
             manifests,
@@ -89,14 +98,14 @@ impl SongFile {
     }
 
     /// Get the bytes from the music embedded with the chosen song.
-    pub fn wem(&self, index: usize) -> Result<Vec<u8>> {
+    pub fn wem(&self) -> Result<Vec<u8>> {
         Ok(self.archive.read_file_with_path(self.song_path())?)
     }
 
     /// Get the bytes from the music embedded with the chosen song and recode it to a proper vorbis
     /// decoder.
-    pub fn vorbis(&self, index: usize) -> Result<WemDecoder> {
-        Ok(WemDecoder::new(&self.wem(index)?)?)
+    pub fn music_decoder(&self) -> Result<WemDecoder> {
+        Ok(WemDecoder::new(&self.wem()?)?)
     }
 
     /// Path for the album art file.
@@ -111,4 +120,58 @@ impl SongFile {
     pub fn song_path(&self) -> &str {
         &self.song_path
     }
+
+    /// Get the parsed song information for a section.
+    pub fn parse_song_info(&self, section_index: usize) -> Result<SongXml> {
+        // Get the song XML
+        let xml_string = read_urn_file_string(
+            &self.archive,
+            &self.entities[section_index]
+                .sng_asset
+                .as_ref()
+                .ok_or_else(|| RocksmithArchiveError::MissingData("sng file".to_string()))?,
+            "xml",
+        )?;
+        let xml = SongXml::parse(&xml_string)?;
+
+        Ok(xml)
+    }
+}
+
+/// Read a file as bytes from an urn file.
+fn read_urn_file(archive: &PlaystationArchive, urn: &str, extension: &str) -> Result<Vec<u8>> {
+    let urn_filename = urn_filename(urn)?;
+
+    // Get the path of the file
+    let archive_path = archive
+        .path_ending_with(&format!("{}.{}", urn_filename, extension))
+        .ok_or_else(|| ArchiveReadError::FileDoesNotExist)?;
+
+    Ok(archive.read_file_with_path(archive_path)?)
+}
+
+/// Read a file as a string from an urn file.
+fn read_urn_file_string(
+    archive: &PlaystationArchive,
+    urn: &str,
+    extension: &str,
+) -> Result<String> {
+    let urn_filename = urn_filename(urn)?;
+
+    // Get the path of the file
+    let archive_path = archive
+        .path_ending_with(&format!("{}.{}", urn_filename, extension))
+        .ok_or_else(|| ArchiveReadError::FileDoesNotExist)?;
+
+    // TODO: clean up archive api
+    let index = archive.index_for_path(archive_path).unwrap();
+
+    Ok(archive.read_file_as_string(index)?)
+}
+
+/// Get the filename from an urn path.
+fn urn_filename(urn: &str) -> Result<&str> {
+    urn.split(":")
+        .last()
+        .ok_or_else(|| RocksmithArchiveError::InvalidUrnPath(urn.to_string()))
 }
