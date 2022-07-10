@@ -7,6 +7,7 @@ use bevy_egui::egui::{
 use rockysmithereens_parser::manifest::Attributes;
 
 /// Draw a plot with the total song difficulties.
+#[profiling::function]
 pub fn ui(ui: &mut Ui, attributes: &Attributes, time_playing: Option<Duration>) {
     // Draw a line with the difficulties
     let bars = attributes

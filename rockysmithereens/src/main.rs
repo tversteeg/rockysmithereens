@@ -9,10 +9,12 @@ use std::{path::PathBuf, sync::Mutex};
 use asset::{RocksmithAsset, RocksmithAssetLoader};
 use bevy::{
     asset::AssetPlugin,
+    log::LogPlugin,
     prelude::{AddAsset, App, AssetServer, Assets, Handle, Res, ResMut},
     DefaultPlugins,
 };
 use bevy_egui::EguiPlugin;
+use bevy_puffin::PuffinTracePlugin;
 use clap::Parser;
 use filesystem::FilesystemPlugin;
 use player::PlayerPlugin;
@@ -60,9 +62,14 @@ lazy_static::lazy_static! {
 fn main() {
     App::new()
         .add_plugins_with(DefaultPlugins, |group| {
-            // Insert the custom filesystem asset plugin at the right position
-            group.add_before::<AssetPlugin, _>(FilesystemPlugin)
+            // Disable the logging because we'll be using puffin
+            group
+                .disable::<LogPlugin>()
+                // Insert the custom filesystem asset plugin at the right position
+                .add_before::<AssetPlugin, _>(FilesystemPlugin)
         })
+        // Profiling
+        .add_plugin(PuffinTracePlugin::new())
         .add_plugin(EguiPlugin)
         .add_plugin(WemPlugin)
         .add_plugin(PlayerPlugin)

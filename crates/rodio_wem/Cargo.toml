@@ -8,5 +8,13 @@ bitvec = "1.0.0"
 byteorder = "1.4.3"
 lewton = "0.10.2"
 nom = "7.1.1"
+profiling = { version = "1.0.6", optional = true }
 rodio = { version = "0.15.0", default-features = false, features = ["vorbis"] }
 thiserror = "1.0.31"
+
+[features]
+profile-with-puffin = ["profiling/profile-with-puffin"]
+profile-with-optick = ["profiling/profile-with-optick"]
+profile-with-superluminal = ["profiling/profile-with-superluminal"]
+profile-with-tracing = ["profiling/profile-with-tracing"]
+profile-with-tracy = ["profiling/profile-with-tracy"]

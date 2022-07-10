@@ -47,6 +47,8 @@ pub struct PlaystationArchive {
 }
 
 impl PlaystationArchive {
+    /// Parse the bytes of a playstation archive file.
+    #[profiling::function]
     pub fn parse(file: &[u8]) -> Result<Self> {
         log::debug!("parsing psarc file of {} bytes", file.len());
 
@@ -108,6 +110,7 @@ impl PlaystationArchive {
     }
 
     /// Read a file.
+    #[profiling::function]
     pub fn read_file(&self, file_index: usize) -> Result<Vec<u8>> {
         let entry = self
             .file_entries
@@ -216,6 +219,7 @@ impl PlaystationArchive {
     }
 
     /// Read a file from a path.
+    #[profiling::function]
     pub fn read_file_with_path(&self, path: &str) -> Result<Vec<u8>> {
         log::debug!("reading file with path '{}'", path);
 
@@ -227,6 +231,7 @@ impl PlaystationArchive {
     }
 
     /// Read file as a string based on the Rocksmith path.
+    #[profiling::function]
     pub fn read_rs_file(&self, path: &str, extension: &str) -> Result<Vec<u8>> {
         log::debug!("reading file with rs path '{}'", path);
 
@@ -243,6 +248,7 @@ impl PlaystationArchive {
     }
 
     /// Read a file as a string.
+    #[profiling::function]
     pub fn read_file_as_string(&self, file_index: usize) -> Result<String> {
         let bytes = self.read_file(file_index)?;
         String::from_utf8(bytes)
@@ -257,6 +263,7 @@ impl PlaystationArchive {
     }
 
     /// Get the index for a file path.
+    #[profiling::function]
     pub fn index_for_path(&self, path: &str) -> Option<usize> {
         self.file_entries
             .iter()
@@ -275,6 +282,7 @@ impl PlaystationArchive {
     }
 
     /// Get the full path name for a path ending with the string.
+    #[profiling::function]
     pub fn path_ending_with(&self, path: &str) -> Option<&str> {
         self.index_for_path_ending_with(path)
             .map(|index| {
@@ -286,11 +294,13 @@ impl PlaystationArchive {
     }
 
     /// All file paths as an iterator.
+    #[profiling::function]
     pub fn paths_iter(&'_ self) -> impl Iterator<Item = &'_ String> {
         self.file_entries.iter().map(|entry| &entry.path)
     }
 
     /// All enumerated file paths filtered by extension as an iterator.
+    #[profiling::function]
     pub fn enumerated_file_paths_by_extension_iter<'b>(
         &'b self,
         extension: &'b str,
@@ -312,6 +322,7 @@ impl PlaystationArchive {
     }
 
     /// Fill the file entry sizes with the calculated total size.
+    #[profiling::function]
     pub fn calculate_file_entry_sizes(&mut self) -> Result<()> {
         // Calculate the input lengths for the every but the last item
         let next_offsets = self
@@ -337,6 +348,7 @@ impl PlaystationArchive {
     }
 
     /// Fill the entries with the lines from the manifest.
+    #[profiling::function]
     fn parse_manifest(&mut self) -> Result<()> {
         log::debug!("reading manifest");
 
@@ -456,6 +468,7 @@ struct TableOfContent<'a> {
 
 impl<'a> TableOfContent<'a> {
     /// Get all file entries.
+    #[profiling::function]
     pub fn file_entries(&self, flags: ArchiveFlags) -> Result<Vec<FileEntry>> {
         // If the archive flag is set to encrypted we'll have to decrypt the data
         let mut i = self.decrypt(flags)?;
@@ -471,6 +484,7 @@ impl<'a> TableOfContent<'a> {
     }
 
     /// Decrypt the TOC if the archive flag is set to encrypted.
+    #[profiling::function]
     pub fn decrypt(&self, flags: ArchiveFlags) -> Result<Vec<u8>> {
         // Skip the first bytes that have already been parsed
         let (i, _) = take(8usize)(self.data)?;
@@ -530,6 +544,7 @@ impl Debug for FileEntry {
 }
 
 /// Parse the magic number at the beginning of the header.
+#[profiling::function]
 fn parse_magic<'a>(i: &'a [u8]) -> IResult<&'a [u8], bool, VerboseError<&'a [u8]>> {
     let (i, magic) = context("magic", be_u32)(i)?;
 
@@ -537,6 +552,7 @@ fn parse_magic<'a>(i: &'a [u8]) -> IResult<&'a [u8], bool, VerboseError<&'a [u8]
 }
 
 /// Parse major and minor version numbers.
+#[profiling::function]
 fn parse_version<'a>(i: &'a [u8]) -> IResult<&'a [u8], Version, VerboseError<&'a [u8]>> {
     let (i, major) = context("major version", be_u16)(i)?;
     let (i, minor) = context("minor version", be_u16)(i)?;
@@ -545,11 +561,13 @@ fn parse_version<'a>(i: &'a [u8]) -> IResult<&'a [u8], Version, VerboseError<&'a
 }
 
 /// Parse compression type.
+#[profiling::function]
 fn parse_compression_type<'a>(i: &'a [u8]) -> IResult<&'a [u8], u32, VerboseError<&'a [u8]>> {
     context("compression type", be_u32)(i)
 }
 
 /// Parse the table of contents.
+#[profiling::function]
 fn parse_toc<'a>(i: &'a [u8]) -> IResult<&'a [u8], TableOfContent<'a>, VerboseError<&'a [u8]>> {
     let (i, length) = context("table of contents length", be_u32)(i)?;
     let (i, entry_size) = context("table of contents entry size", be_u32)(i)?;
@@ -566,16 +584,19 @@ fn parse_toc<'a>(i: &'a [u8]) -> IResult<&'a [u8], TableOfContent<'a>, VerboseEr
 }
 
 /// Parse block size.
+#[profiling::function]
 fn parse_block_size<'a>(i: &'a [u8]) -> IResult<&'a [u8], u32, VerboseError<&'a [u8]>> {
     context("block size", be_u32)(i)
 }
 
 /// Parse archive flags.
+#[profiling::function]
 fn parse_archive_flags<'a>(i: &'a [u8]) -> IResult<&'a [u8], u32, VerboseError<&'a [u8]>> {
     context("archive flags", be_u32)(i)
 }
 
 /// Parse file entry.
+#[profiling::function]
 fn parse_file_entry<'a>(i: &'a [u8]) -> IResult<&'a [u8], FileEntry, VerboseError<&'a [u8]>> {
     let (i, _name_digest_block) = context("file entry", be_u128)(i)?;
 
@@ -596,6 +617,7 @@ fn parse_file_entry<'a>(i: &'a [u8]) -> IResult<&'a [u8], FileEntry, VerboseErro
 }
 
 /// Parse block sizes.
+#[profiling::function]
 fn parse_block_sizes<'a>(
     i: &'a [u8],
     num_blocks: usize,

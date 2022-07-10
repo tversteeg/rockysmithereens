@@ -17,6 +17,7 @@ pub struct CodebookLibrary<'a> {
 
 impl<'a> CodebookLibrary<'a> {
     /// Create the library from a binary.
+    #[profiling::function]
     pub fn from_bytes(bytes: &'a [u8]) -> Result<Self> {
         // Get the last 4 bytes of the stream as the offset for the list of offsets
         let (_, offsets_offset) =
@@ -40,6 +41,7 @@ impl<'a> CodebookLibrary<'a> {
     }
 
     /// Rebuild the vorbis header input codebook.
+    #[profiling::function]
     pub fn rebuild(&self, codebook_index: usize) -> Result<BitVec<u8, Lsb0>> {
         // Get the codebook data belonging to the index
         let codebook_data = self.codebook(codebook_index)?;
@@ -148,6 +150,7 @@ impl<'a> CodebookLibrary<'a> {
     }
 
     /// Get the data for a specific codebook.
+    #[profiling::function]
     pub fn codebook(&self, index: usize) -> Result<&'a [u8]> {
         let first_offset = self
             .offsets
@@ -164,6 +167,7 @@ impl<'a> CodebookLibrary<'a> {
     }
 
     /// Get the amount of quant values that should be parsed.
+    #[profiling::function]
     pub fn quantvals(entries: u32, dimensions: u32) -> u32 {
         let bits = log2(entries) as u32;
         let mut vals = entries >> ((bits - 1) * (dimensions - 1) / dimensions);

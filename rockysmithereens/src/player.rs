@@ -10,7 +10,7 @@ use bevy::{
 };
 use bevy_egui::{
     egui::{
-        plot::{Plot, Points, Text, Value, Values},
+        plot::{Plot, Points, Text, VLine, Value, Values},
         CentralPanel, Color32, TopBottomPanel, Vec2,
     },
     EguiContext,
@@ -26,15 +26,19 @@ const NOTE_SPAWN_TIME: f32 = 20.0;
 pub struct MusicController {
     // Handle to the audio sink to pause the music.
     sink: Handle<AudioSink>,
+
+    // Handle to the music source.
+    source: Handle<WemSource>,
     // How far we are along with the song.
     time_playing: Duration,
 }
 
 impl MusicController {
     /// Start a new controller with the time set to zero.
-    pub fn new(sink: Handle<AudioSink>) -> Self {
+    pub fn new(sink: Handle<AudioSink>, source: Handle<WemSource>) -> Self {
         Self {
             sink,
+            source,
             time_playing: Duration::ZERO,
         }
     }
@@ -76,6 +80,7 @@ impl Plugin for PlayerPlugin {
 }
 
 /// Pause the music.
+#[profiling::function]
 pub fn pause(
     keyboard_input: Res<Input<KeyCode>>,
     audio_sinks: Res<Assets<AudioSink>>,
@@ -93,11 +98,19 @@ pub fn pause(
 }
 
 /// Update the duration based on if we are playing.
+#[profiling::function]
 pub fn update_playing_duration(
     audio_sinks: Res<Assets<AudioSink>>,
     mut music_controller: ResMut<MusicController>,
     time: Res<Time>,
+    sources: Res<Assets<WemSource>>,
 ) {
+    // Only update if we are not loading the asset
+    if sources.get(&music_controller.source).is_none() {
+        return;
+    }
+
+    // Update current time
     if let Some(sink) = audio_sinks.get(&music_controller.sink) {
         if !sink.is_paused() {
             music_controller.time_playing += time.delta();
@@ -106,6 +119,7 @@ pub fn update_playing_duration(
 }
 
 /// Show the notes.
+#[profiling::function]
 pub fn show_notes(
     mut context: ResMut<EguiContext>,
     music_controller: Res<MusicController>,
@@ -125,14 +139,16 @@ pub fn show_notes(
             .allow_boxed_zoom(false)
             .allow_drag(false)
             .allow_scroll(false)
-            .include_x(0.0)
+            .include_x(-1.0)
             .include_x(NOTE_SPAWN_TIME)
             .include_y(-1.0)
             .include_y(7.0)
             .show_x(false)
             .show_y(false)
+            .show_axes([false, true])
             .height(300.0)
             .show(ui, |plot_ui| {
+                // Each note
                 notes.for_each(|note| {
                     plot_ui.text(
                         Text::new(
@@ -156,11 +172,15 @@ pub fn show_notes(
                         }),
                     )
                 });
+
+                // A line at zero
+                plot_ui.vline(VLine::new(0.0));
             });
     });
 }
 
 /// Load the song.
+#[profiling::function]
 pub fn load_song(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -169,12 +189,13 @@ pub fn load_song(
 ) {
     if let Some(song) = &*LOADED_SONG.lock().unwrap() {
         let music = asset_server.load(song.song_path());
-        let handle = sinks.get_handle(audio.play(music));
-        commands.insert_resource(MusicController::new(handle));
+        let handle = sinks.get_handle(audio.play(music.clone_weak()));
+        commands.insert_resource(MusicController::new(handle, music));
     }
 }
 
 /// Load the song XML.
+#[profiling::function]
 pub fn load_song_xml(mut commands: Commands, state: Res<State>) {
     if let Some(song) = &*LOADED_SONG.lock().unwrap() {
         // TODO: handle errors

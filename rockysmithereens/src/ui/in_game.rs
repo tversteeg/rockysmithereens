@@ -1,12 +1,10 @@
 use bevy::prelude::{Res, ResMut};
-use bevy_egui::{
-    egui::{TopBottomPanel},
-    EguiContext,
-};
+use bevy_egui::{egui::TopBottomPanel, EguiContext};
 
 use crate::{player::MusicController, State, LOADED_SONG};
 
 /// The UI for selecting an arrangement for the song.
+#[profiling::function]
 pub fn ui(mut context: ResMut<EguiContext>, state: Res<State>, controller: Res<MusicController>) {
     if let Some(current_song) = state.current_song {
         if let Some(song) = &*LOADED_SONG.lock().unwrap() {

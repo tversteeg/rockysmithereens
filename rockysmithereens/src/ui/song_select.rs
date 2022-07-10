@@ -5,6 +5,7 @@ use rfd::FileDialog;
 use crate::{asset::RocksmithAsset, Phase, State};
 
 /// The UI for selecting a song.
+#[profiling::function]
 pub fn ui(
     mut context: ResMut<EguiContext>,
     mut state: ResMut<State>,

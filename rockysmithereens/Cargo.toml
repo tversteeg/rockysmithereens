@@ -5,8 +5,9 @@ edition = "2021"
 default-run = "rockysmithereens"
 
 [dependencies]
-rodio_wem = { path = "../crates/rodio_wem" }
-rockysmithereens_parser = { path = "../crates/rockysmithereens_parser" }
+rodio_wem = { path = "../crates/rodio_wem", features = ["profile-with-tracing"] }
+rockysmithereens_parser = { path = "../crates/rockysmithereens_parser", features = ["profile-with-tracing"] }
+
 anyhow = "1.0.58"
 bevy = { version = "0.7.0", default-features = false, features = ["render", "bevy_audio", "bevy_winit", "x11", "dds"] }
 bevy_egui = "0.14.0"
@@ -14,6 +15,9 @@ clap = { version = "3.2.8", features = ["derive"] }
 rfd = "0.9.1"
 lazy_static = "1.4.0"
 rodio = { version = "0.15.0", default-features = false }
+profiling = { version = "1.0.6", features = ["profile-with-tracing"] }
+bevy_puffin = "0.1.0"
+puffin_egui = "0.16.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 tracing-wasm = "0.2.1"

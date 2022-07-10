@@ -7,6 +7,7 @@ use bevy_egui::{
 use crate::{Phase, State, LOADED_SONG};
 
 /// The UI for selecting an arrangement for the song.
+#[profiling::function]
 pub fn ui(
     asset_server: Res<AssetServer>,
     mut context: ResMut<EguiContext>,

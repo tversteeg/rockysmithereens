@@ -16,6 +16,7 @@ pub struct Packet {
 }
 
 impl Packet {
+    #[profiling::function]
     pub fn parse<'a>(
         data: &'a [u8],
         mode_block_flags: &[bool],
@@ -91,6 +92,7 @@ impl std::fmt::Debug for Packet {
 }
 
 /// Parse the data bytes into packets.
+#[profiling::function]
 pub fn parse_into_packets(
     mut i: &[u8],
     mode_block_flag: Vec<bool>,

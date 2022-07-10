@@ -5,7 +5,11 @@ pub mod utils;
 
 pub use error::WemError;
 
-use std::{io::Write, time::Duration, vec::IntoIter};
+use std::{
+    io::Write,
+    time::{Duration, Instant},
+    vec::IntoIter,
+};
 
 use bitvec::{order::Lsb0, prelude::BitVec, view::BitView};
 use byteorder::{LittleEndian, WriteBytesExt};
@@ -55,10 +59,13 @@ pub struct WemDecoder {
     current_data: IntoIter<i16>,
     /// Whether we are done with this song.
     done: bool,
+    /// Exact time when the music started playing.
+    started: Instant,
 }
 
 impl WemDecoder {
     /// Attempts to decode the data as a wwise file containing vorbis.
+    #[profiling::function]
     pub fn new(bytes: &[u8]) -> Result<WemDecoder> {
         let WemParser {
             comment_header,
@@ -89,6 +96,7 @@ impl WemDecoder {
             current_data: Vec::new().into_iter(),
             done: false,
             current_packet: 0,
+            started: Instant::now(),
         };
 
         // The first read initializes lewton
@@ -105,6 +113,7 @@ impl WemDecoder {
     }
 
     /// Read a packet.
+    #[profiling::function]
     fn read_packet(&mut self) -> Result<()> {
         let audio: InterleavedSamples<_> = lewton::audio::read_audio_packet_generic(
             &self.ident,
@@ -122,6 +131,11 @@ impl WemDecoder {
         self.done = self.current_packet == self.packets.len();
 
         Ok(())
+    }
+
+    /// How long this audio has been playing.
+    pub fn elapsed(&self) -> Duration {
+        self.started.elapsed()
     }
 }
 
@@ -198,6 +212,7 @@ pub struct WemParser {
 
 impl WemParser {
     /// Attempts to decode the data as a wwise file containing vorbis.
+    #[profiling::function]
     pub fn new(bytes: &[u8]) -> Result<Self> {
         // Get the endianness
         let (i, endianness) = parse_endianness_by_header(bytes)?;
@@ -259,6 +274,7 @@ pub struct Fmt {
 
 impl Fmt {
     /// Create a fake vorbis identification header packet.
+    #[profiling::function]
     pub fn to_ident_packet(&self) -> Result<Vec<u8>> {
         let mut bytes = Vec::with_capacity(30);
 
@@ -302,6 +318,7 @@ pub enum Chunk {
 
 impl Chunk {
     /// Parse with nom the bytes for this chunk.
+    #[profiling::function]
     pub fn parse<'a>(
         i: &'a [u8],
         endianness: Endianness,
@@ -371,6 +388,7 @@ impl ChunkList for Vec<Chunk> {
 /// Parse header to get the endianness of the file.
 ///
 /// `true` means it's little endian.
+#[profiling::function]
 fn parse_endianness_by_header<'a>(
     i: &'a [u8],
 ) -> IResult<&'a [u8], Endianness, VerboseError<&'a [u8]>> {
@@ -387,6 +405,7 @@ fn parse_endianness_by_header<'a>(
 }
 
 /// Parse chunks.
+#[profiling::function]
 fn parse_chunks<'a>(
     i: &'a [u8],
     endianness: Endianness,
@@ -409,6 +428,7 @@ fn parse_chunks<'a>(
 }
 
 /// Parse the fmt chunk.
+#[profiling::function]
 fn parse_fmt_chunk<'a>(
     data: &'a [u8],
     endianness: Endianness,
@@ -466,6 +486,7 @@ fn parse_fmt_chunk<'a>(
 }
 
 /// Create a fake vorbis comment header packet.
+#[profiling::function]
 pub fn empty_comment_packet() -> Result<Vec<u8>> {
     let mut bytes = Vec::new();
 
@@ -496,6 +517,7 @@ pub fn empty_comment_packet() -> Result<Vec<u8>> {
 /// Create a fake vorbis setup header packet.
 ///
 /// Also returns `mode_blockflag` and `mode_bits`.
+#[profiling::function]
 pub fn create_setup_packet(
     endianness: Endianness,
     fmt: &Fmt,

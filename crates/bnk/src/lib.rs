@@ -10,6 +10,7 @@ use nom::{bytes::complete::take, error::context, number::complete::le_u32};
 const DIDX_FILE_SIZE: usize = 12;
 
 /// Get the references to .wem files from the .bnk file.
+#[profiling::function]
 pub fn wem_filenames(bytes: &[u8]) -> Result<Vec<String>> {
     // Parse the sections from the bnk file
     let section_map = sections(bytes)?;
@@ -34,6 +35,7 @@ pub fn wem_filenames(bytes: &[u8]) -> Result<Vec<String>> {
 }
 
 /// Get all sections.
+#[profiling::function]
 pub fn sections(mut i: &[u8]) -> Result<HashMap<[u8; 4], &[u8]>> {
     let mut result: HashMap<[u8; 4], &[u8]> = HashMap::new();
 

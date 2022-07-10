@@ -41,7 +41,6 @@ impl SongFile {
 
         // TODO: handle multiple block files
         let xblock = Xblock::parse(&archive.read_file_as_string(xblock_indices[0])?)?;
-        dbg!(&xblock);
 
         // Get the required song properties
         let entities = xblock.simplified_entities_iter().collect::<Vec<_>>();
@@ -60,7 +59,8 @@ impl SongFile {
                     .as_ref()
                     .map(|manifest_path| Manifest::parse(&archive, manifest_path))
             })
-            .collect::<Result<_>>()?;
+            .collect::<Result<Vec<_>>>()?;
+        dbg!(&manifests[0]);
 
         // Get the song bank
         let bnk_bytes = read_urn_file(
