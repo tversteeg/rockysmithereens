@@ -6,6 +6,9 @@ mod wem;
 
 use std::{path::PathBuf, sync::Mutex};
 
+#[cfg(feature = "profile")]
+use bevy_puffin::PuffinTracePlugin;
+
 use asset::{RocksmithAsset, RocksmithAssetLoader};
 use bevy::{
     asset::AssetPlugin,
@@ -14,7 +17,6 @@ use bevy::{
     DefaultPlugins,
 };
 use bevy_egui::EguiPlugin;
-use bevy_puffin::PuffinTracePlugin;
 use clap::Parser;
 use filesystem::FilesystemPlugin;
 use player::PlayerPlugin;
@@ -50,6 +52,8 @@ pub struct State {
     handle: Handle<RocksmithAsset>,
     /// Which song got selected.
     current_song: Option<usize>,
+    /// The current difficulty.
+    difficulty: usize,
 }
 
 // TODO: figure out how to make this a resource, the current problem is that AssetIo doesn't accept
@@ -60,27 +64,32 @@ lazy_static::lazy_static! {
 }
 
 fn main() {
-    App::new()
-        .add_plugins_with(DefaultPlugins, |group| {
-            // Disable the logging because we'll be using puffin
-            group
-                .disable::<LogPlugin>()
-                // Insert the custom filesystem asset plugin at the right position
-                .add_before::<AssetPlugin, _>(FilesystemPlugin)
-        })
-        // Profiling
-        .add_plugin(PuffinTracePlugin::new())
-        .add_plugin(EguiPlugin)
-        .add_plugin(WemPlugin)
-        .add_plugin(PlayerPlugin)
-        .add_plugin(UiPlugin)
-        .add_state(Phase::SongSelectionMenu)
-        .init_resource::<State>()
-        .add_asset::<RocksmithAsset>()
-        .init_asset_loader::<RocksmithAssetLoader>()
-        .add_startup_system(cli_setup)
-        .add_system(song_loader)
-        .run();
+    let mut app = App::new();
+
+    // Profiling
+    #[cfg(feature = "profile")]
+    {
+        app = app.add_plugin(PuffinTracePlugin::new());
+    }
+
+    app.add_plugins_with(DefaultPlugins, |group| {
+        // Disable the logging because we'll be using puffin
+        group
+            .disable::<LogPlugin>()
+            // Insert the custom filesystem asset plugin at the right position
+            .add_before::<AssetPlugin, _>(FilesystemPlugin)
+    })
+    .add_plugin(EguiPlugin)
+    .add_plugin(WemPlugin)
+    .add_plugin(PlayerPlugin)
+    .add_plugin(UiPlugin)
+    .add_state(Phase::SongSelectionMenu)
+    .init_resource::<State>()
+    .add_asset::<RocksmithAsset>()
+    .init_asset_loader::<RocksmithAssetLoader>()
+    .add_startup_system(cli_setup)
+    .add_system(song_loader)
+    .run();
 }
 
 /// Handle CLI arguments.

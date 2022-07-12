@@ -1,8 +1,10 @@
-pub mod arrangement_select;
-pub mod in_game;
-pub mod phrases_plot;
+mod arrangement_select;
+mod in_game;
+mod notes_plot;
+mod phrases_plot;
+#[cfg(feature = "profile")]
 mod profiling;
-pub mod song_select;
+mod song_select;
 
 use bevy::prelude::{App, Plugin, SystemSet};
 
@@ -22,6 +24,8 @@ impl Plugin for UiPlugin {
                 .with_system(arrangement_select::ui),
         )
         .add_system_set(SystemSet::on_update(Phase::Playing).with_system(in_game::ui))
-        .add_system(profiling::ui);
+        .add_system_set(SystemSet::on_update(Phase::Playing).with_system(notes_plot::ui));
+        #[cfg(feature = "profile")]
+        app.add_system(profiling::ui);
     }
 }

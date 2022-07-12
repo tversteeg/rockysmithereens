@@ -33,6 +33,11 @@ impl SongXml {
             .find(|level| level.difficulty == difficulty)
             .ok_or_else(|| RocksmithArchiveError::NoLevelWithDifficulty(difficulty))
     }
+
+    /// Get all levels as an iterator.
+    pub fn levels_iter(&self) -> impl Iterator<Item = &Level> {
+        self.levels.levels.iter()
+    }
 }
 
 /// Newtype for levels with different difficulties.
@@ -55,6 +60,8 @@ pub struct Level {
     anchors: Anchors,
     /// Notes.
     notes: Notes,
+    /// Chords.
+    chords: Chords,
 }
 
 impl Level {
@@ -68,6 +75,20 @@ impl Level {
             .notes
             .iter()
             .filter(move |note| note.time >= start_time && note.time < end_time)
+    }
+
+    /// Get all chord notes between the timerange.
+    pub fn chord_notes_between_time_iter(
+        &self,
+        start_time: f32,
+        end_time: f32,
+    ) -> impl Iterator<Item = &ChordNote> {
+        self.chords
+            .chords
+            .iter()
+            .filter(move |chord| chord.time >= start_time && chord.time < end_time)
+            .map(move |chord| chord.notes.iter())
+            .flatten()
     }
 }
 
@@ -89,7 +110,7 @@ pub struct Anchor {
     /// At which fret the camera should zoom in.
     fret: u8,
     /// How much the camera should be zoomed in.
-    width: u8,
+    width: f32,
 }
 
 /// All the notes for this section.
@@ -111,6 +132,12 @@ pub struct Note {
     pub fret: i8,
     /// Which string to play this note on.
     pub string: i8,
+    /// Whether it should bend.
+    ///
+    /// Means the bend values array will be filled.
+    bend: Option<u8>,
+    /// The values when `bend == 1`.
+    bend_values: Option<BendValues>,
     /*
     /// Whether this note should be played with the left hand.
     left_hand: i8,
@@ -124,12 +151,6 @@ pub struct Note {
     slide_unpitch_to: i8,
     // TODO: find out what it does
     slide_to: i8,
-    /// Whether it should bend.
-    ///
-    /// Means the bend values array will be filled.
-    bend: i8,
-    /// The values when `bend == 1`.
-    bend_values: Option<BendValues>,
     /// Whether this note is a hammer-on.
     hammer_on: i8,
     /// Whether this note is a harmonic note.
@@ -176,5 +197,41 @@ pub struct BendValue {
     // TODO: find out what it does
     step: f32,
     // TODO: find out what it does
-    unk5: u8,
+    unk5: Option<i32>,
+}
+
+/// All the chords for this section.
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Chords {
+    #[serde(rename = "chord", default)]
+    chords: Vec<Chord>,
+    count: usize,
+}
+
+/// A single chord in time.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Chord {
+    /// When the chord will be struck.
+    time: f32,
+    /// Which cord it is.
+    ///
+    /// The name and other information can be found with this ID.
+    chord_id: i16,
+    /// Notes for this chord.
+    #[serde(rename = "chordNote", default)]
+    notes: Vec<ChordNote>,
+}
+
+/// A single note for a chord in time.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChordNote {
+    /// When the note should be struck.
+    pub time: f32,
+    /// Which fret to play this note on.
+    pub fret: i8,
+    /// Which string to play this note on.
+    pub string: i8,
 }

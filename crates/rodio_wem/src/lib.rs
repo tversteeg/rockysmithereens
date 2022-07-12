@@ -38,6 +38,7 @@ use crate::{
 };
 
 /// Decoder for an Wem file.
+#[derive(Clone)]
 pub struct WemDecoder {
     /// The fmt chunk.
     ///

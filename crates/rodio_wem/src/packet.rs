@@ -8,6 +8,7 @@ use crate::{
 };
 
 /// A vorbis data packet.
+#[derive(Clone)]
 pub struct Packet {
     /// Raw data for the packet.
     pub data: Vec<u8>,

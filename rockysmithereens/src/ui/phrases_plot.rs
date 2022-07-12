@@ -50,7 +50,7 @@ pub fn ui(ui: &mut Ui, attributes: &Attributes, time_playing: Option<Duration>) 
         .include_y(0.0)
         .include_x(0.0)
         .set_margin_fraction(Vec2::new(0.0, 0.0))
-        .x_axis_formatter(|x, _| format!("{}m {}s", (x / 60.0).ceil(), (x % 60.0)))
+        .x_axis_formatter(|x, _| format!("{}m {}s", (x / 60.0).floor(), (x % 60.0)))
         .show(ui, |plot_ui| {
             plot_ui.bar_chart(barchart);
 

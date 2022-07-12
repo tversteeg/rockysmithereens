@@ -12,11 +12,6 @@ pub fn ui(
     asset_server: Res<AssetServer>,
     mut phase: ResMut<bevy::prelude::State<Phase>>,
 ) {
-    // Don't draw the selection UI when a song has already been selected
-    if state.current_song.is_some() {
-        return;
-    }
-
     CentralPanel::default().show(context.ctx_mut(), |ui| {
         ui.label("Open a Rocksmith '*.psarc' file");
 

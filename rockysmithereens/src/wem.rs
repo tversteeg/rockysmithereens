@@ -1,5 +1,3 @@
-
-
 use anyhow::Result;
 use bevy::{
     asset::{AddAsset, AssetLoader, BoxedFuture, LoadContext, LoadedAsset},
@@ -9,13 +7,11 @@ use bevy::{
 };
 use rodio_wem::WemDecoder;
 
-
-
 /// Bevy source for playing wem files.
-#[derive(Debug, Clone, TypeUuid)]
+#[derive(TypeUuid)]
 #[uuid = "af6466c2-a9f4-11eb-bcbc-0242ac130002"]
 pub struct WemSource {
-    pub bytes: Vec<u8>,
+    pub decoder: WemDecoder,
 }
 
 impl Decodable for WemSource {
@@ -23,8 +19,8 @@ impl Decodable for WemSource {
     type DecoderItem = <Self::Decoder as Iterator>::Item;
 
     fn decoder(&self) -> Self::Decoder {
-        // TODO: handle errors
-        WemDecoder::new(&self.bytes).unwrap()
+        // TODO: remove this clone
+        self.decoder.clone()
     }
 }
 
@@ -38,13 +34,14 @@ impl AssetLoader for WemLoader {
         bytes: &'a [u8],
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<()>> {
-        let source = WemSource {
-            bytes: bytes.to_vec(),
-        };
+        Box::pin(async move {
+            let decoder = WemDecoder::new(bytes)?;
 
-        load_context.set_default_asset(LoadedAsset::new(source));
+            let source = WemSource { decoder };
 
-        Box::pin(async move { Ok(()) })
+            load_context.set_default_asset(LoadedAsset::new(source));
+            Ok(())
+        })
     }
 
     fn extensions(&self) -> &[&str] {
