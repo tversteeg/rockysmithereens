@@ -129,6 +129,35 @@ pub struct Attributes {
     pub manifest_urn: String,
 }
 
+impl Attributes {
+    /// Get the name of the song.
+    pub fn name(&self) -> &str {
+        if self.song_name.is_empty() {
+            &self.song_name_sort
+        } else {
+            &self.song_name
+        }
+    }
+
+    /// Get the artist of the song.
+    pub fn artist(&self) -> &str {
+        if self.artist_name.is_empty() {
+            &self.artist_name_sort
+        } else {
+            &self.artist_name
+        }
+    }
+
+    /// Get the album of the song.
+    pub fn album(&self) -> &str {
+        if self.album_name.is_empty() {
+            &self.album_name_sort
+        } else {
+            &self.album_name
+        }
+    }
+}
+
 /// Template for a chord.
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "PascalCase")]

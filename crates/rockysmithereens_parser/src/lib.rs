@@ -1,12 +1,16 @@
 mod error;
+pub mod level;
 pub mod manifest;
-pub mod song_xml;
+pub mod note;
+pub mod song;
+mod song_xml;
 pub mod xblock;
 
 use manifest::Manifest;
 use psarc::{ArchiveReadError, PlaystationArchive};
 use rodio_wem::WemDecoder;
-use song_xml::SongXml;
+use song::Song;
+use song_xml::XmlSong;
 
 use crate::{
     error::{Result, RocksmithArchiveError},
@@ -60,7 +64,6 @@ impl SongFile {
                     .map(|manifest_path| Manifest::parse(&archive, manifest_path))
             })
             .collect::<Result<Vec<_>>>()?;
-        dbg!(&manifests[0]);
 
         // Get the song bank
         let bnk_bytes = read_urn_file(
@@ -122,7 +125,7 @@ impl SongFile {
     }
 
     /// Get the parsed song information for a section.
-    pub fn parse_song_info(&self, section_index: usize) -> Result<SongXml> {
+    pub fn parse_song_info(&self, section_index: usize) -> Result<Song> {
         // Get the song XML
         let xml_string = read_urn_file_string(
             &self.archive,
@@ -132,9 +135,9 @@ impl SongFile {
                 .ok_or_else(|| RocksmithArchiveError::MissingData("sng file".to_string()))?,
             "xml",
         )?;
-        let xml = SongXml::parse(&xml_string)?;
+        let xml = XmlSong::parse(&xml_string)?;
 
-        Ok(xml)
+        Ok(Song::from(xml))
     }
 }
 

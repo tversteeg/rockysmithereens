@@ -1,4 +1,4 @@
-use std::{ops::Deref, time::Duration};
+use std::time::Duration;
 
 use bevy::{
     audio::{Audio, AudioSink},
@@ -8,11 +8,12 @@ use bevy::{
         App, AssetServer, Assets, Commands, Handle, KeyCode, Plugin, Res, ResMut, SystemSet,
     },
 };
+use rockysmithereens_parser::level::Level;
 
 use crate::{wem::WemSource, Phase, State, LOADED_SONG};
 
 /// Time between this and the current time before a note is spawned.
-pub const NOTE_SPAWN_TIME: f32 = 20.0;
+pub const NOTE_SPAWN_TIME: f32 = 10.0;
 
 /// Music player event handler.
 #[derive(Debug, Default)]
@@ -41,18 +42,6 @@ impl MusicController {
     }
 }
 
-/// Level resource.
-#[derive(Debug, Default)]
-pub struct Level(rockysmithereens_parser::song_xml::Level);
-
-impl Deref for Level {
-    type Target = rockysmithereens_parser::song_xml::Level;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 /// Bevy plugin for the audio player.
 #[derive(Debug)]
 pub struct PlayerPlugin;
@@ -61,12 +50,13 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MusicController>()
             .init_resource::<Level>()
+            .add_system_set(SystemSet::on_update(Phase::Loading).with_system(load_song_information))
             .add_system_set(SystemSet::on_enter(Phase::Playing).with_system(load_song))
-            .add_system_set(SystemSet::on_enter(Phase::Playing).with_system(load_song_xml))
             .add_system_set(SystemSet::on_update(Phase::Playing).with_system(pause))
             .add_system_set(
                 SystemSet::on_update(Phase::Playing).with_system(update_playing_duration),
-            );
+            )
+            .add_system_set(SystemSet::on_exit(Phase::Playing).with_system(exit));
     }
 }
 
@@ -109,6 +99,18 @@ pub fn update_playing_duration(
     }
 }
 
+/// Stop playing the song.
+#[profiling::function]
+pub fn exit(audio_sinks: Res<Assets<AudioSink>>, music_controller: Res<MusicController>) {
+    // Unload the audio
+    if let Some(sink) = audio_sinks.get(&music_controller.sink) {
+        sink.stop()
+    }
+
+    // Unload the loaded song file
+    *LOADED_SONG.lock().unwrap() = None;
+}
+
 /// Load the song.
 #[profiling::function]
 pub fn load_song(
@@ -124,24 +126,19 @@ pub fn load_song(
     }
 }
 
-/// Load the song XML.
+/// Load the song information with all the notes.
 #[profiling::function]
-pub fn load_song_xml(mut commands: Commands, state: Res<State>) {
+pub fn load_song_information(
+    mut commands: Commands,
+    state: Res<State>,
+    mut phase: ResMut<bevy::prelude::State<Phase>>,
+) {
     if let Some(song) = &*LOADED_SONG.lock().unwrap() {
         // TODO: handle errors
-        let xml = song.parse_song_info(state.current_song.unwrap()).unwrap();
+        let parsed_song = song.parse_song_info(state.current_song.unwrap()).unwrap();
 
-        /*
-        // TODO: update based on selected difficulty
-        // Find the highest difficulty of the song
-        let highest_difficulty = xml.highest_difficulty().unwrap();
+        commands.insert_resource(parsed_song);
 
-        // Get the level for the specified difficulty
-        let level = xml.into_level_with_difficulty(highest_difficulty).unwrap();
-
-        // Register the level
-        commands.insert_resource(Level(level));
-        */
-        commands.insert_resource(xml);
+        phase.set(Phase::Playing).unwrap();
     }
 }

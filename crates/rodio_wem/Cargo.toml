@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bitvec = "1.0.0"
+bitvec = "1.0.1"
 byteorder = "1.4.3"
 #lewton = "0.10.2"
 lewton = { git = "https://github.com/tversteeg/lewton.git", branch = "clone" }

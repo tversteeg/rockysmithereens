@@ -1,6 +1,7 @@
 mod asset;
 mod filesystem;
 mod player;
+mod preview;
 mod ui;
 mod wem;
 
@@ -21,6 +22,7 @@ use clap::Parser;
 use filesystem::FilesystemPlugin;
 use player::PlayerPlugin;
 
+use preview::PreviewPlugin;
 use rockysmithereens_parser::SongFile;
 use ui::UiPlugin;
 use wem::WemPlugin;
@@ -41,6 +43,8 @@ pub enum Phase {
     SongSelectionMenu,
     /// A song has been selected but no arrangement yet.
     ArrangementSelectionMenu,
+    /// We are parsing and loading the required files.
+    Loading,
     /// A song will be playing now.
     Playing,
 }
@@ -83,6 +87,7 @@ fn main() {
     .add_plugin(WemPlugin)
     .add_plugin(PlayerPlugin)
     .add_plugin(UiPlugin)
+    .add_plugin(PreviewPlugin)
     .add_state(Phase::SongSelectionMenu)
     .init_resource::<State>()
     .add_asset::<RocksmithAsset>()

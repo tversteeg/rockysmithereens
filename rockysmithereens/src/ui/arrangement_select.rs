@@ -64,7 +64,7 @@ pub fn ui(
                         if ui.button(&attributes.arrangement_name).clicked() {
                             state.current_song = Some(i);
 
-                            phase.set(Phase::Playing).unwrap();
+                            phase.set(Phase::Loading).unwrap();
                         }
 
                         // Show the phrases
