@@ -127,6 +127,8 @@ pub struct XmlNote {
     pub palm_mute: Option<i8>,
     /// How much this note needs to be sustained.
     pub sustain: Option<f32>,
+    /// Whether this is a vibrato note.
+    pub vibrato: Option<i8>,
     /*
     /// Whether this note should be played with the left hand.
     left_hand: i8,

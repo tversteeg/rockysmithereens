@@ -53,25 +53,25 @@ pub fn ui(
                 notes.for_each(|note| {
                     // Get the starting position of the note
                     let x = note.time - time_playing_secs;
-                    let pos = Value::new(x, note.string);
+                    let pos = Value::new(
+                        x,
+                        note.string as f32
+                            + note.bend.map(|bend| bend.0 * BEND_FACTOR).unwrap_or(0.0),
+                    );
                     let color = string_number_to_color(note.string);
 
                     // Draw a line when a sustain is played
                     if let Some(sustain) = note.sustain {
                         // Add the bend if applicable
-                        let (first_pos, second_pos) = match note.bend {
-                            Some((start_bend, end_bend)) => (
-                                Value::new(x, note.string as f32 + start_bend * BEND_FACTOR),
-                                Value::new(
-                                    x + sustain,
-                                    note.string as f32 + end_bend * BEND_FACTOR,
-                                ),
-                            ),
-                            None => (pos, Value::new(x + sustain, note.string as f32)),
+                        let second_pos = match note.bend {
+                            Some((_, end_bend)) => {
+                                Value::new(x + sustain, note.string as f32 + end_bend * BEND_FACTOR)
+                            }
+                            None => Value::new(x + sustain, note.string as f32),
                         };
 
                         plot_ui.line(
-                            Line::new(Values::from_values(vec![first_pos, second_pos]))
+                            Line::new(Values::from_values(vec![pos, second_pos]))
                                 .color(color)
                                 .width(1.0),
                         );
@@ -83,7 +83,7 @@ pub fn ui(
                     }
 
                     // Draw the number for the note if it's not an intermediate note
-                    if note.bend.is_none() {
+                    if note.show {
                         if note.slide_to_next {
                             // Draw slides differently
                             plot_ui.text(Text::new(pos, format!("{}>", note.fret)).color(color));

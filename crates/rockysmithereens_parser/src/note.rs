@@ -15,6 +15,8 @@ pub struct Note {
     ///
     /// The first value is the starting position of the bend, and the second the ending position.
     pub bend: Option<(f32, f32)>,
+    /// Whether this note's should be drawn or whether it's part of a bend.
+    pub show: bool,
     /// To which fret to slide if applicable.
     ///
     /// Can only be used in combination with sustain.
@@ -36,6 +38,7 @@ impl Note {
             time,
             fret: fret.max(0) as u8,
             string: string.max(0) as u8,
+            show: true,
             mute: false,
             bend: None,
             slide_to_next: false,
@@ -59,17 +62,22 @@ impl From<XmlNote> for Vec<Note> {
 
         first.slide_to_next = xml.slide_to > Some(0);
 
+        if xml.bend.is_some() && xml.bend != Some(0.0) {
+            first.bend = xml.bend.map(|bend_value| (bend_value, 0.0));
+        }
+
         // The first one is always a note
-        std::iter::once(first.clone())
+        let mut notes = std::iter::once(first.clone())
             // After that come the optional bend values
             .chain(
                 xml.bend_values_iter()
                     // Keep track of the previous bend value so every note has a range
-                    .scan(0f32, |previous_value, bend_value| {
+                    .scan(xml.bend.unwrap_or(0.0), |previous_value, bend_value| {
                         let current_value = bend_value.step.unwrap_or(0.0);
 
                         let note = Some(Note {
                             time: bend_value.time,
+                            show: false,
                             bend: Some((*previous_value, current_value)),
                             ..first
                         });
@@ -79,7 +87,26 @@ impl From<XmlNote> for Vec<Note> {
                         note
                     }),
             )
-            .collect()
+            .collect::<Vec<_>>();
+
+        // Fix the sustain lengths
+        let mut notes_iter = notes.iter_mut().peekable();
+        while let Some(note) = notes_iter.next() {
+            match notes_iter.peek() {
+                // Calculate the sustain based on the position of the next note
+                Some(next) => {
+                    note.sustain = Some(next.time - note.time);
+                }
+                // It's the last note
+                None => {
+                    if let Some(sustain) = first.sustain {
+                        note.sustain = Some(sustain - (note.time - first.time));
+                    }
+                }
+            }
+        }
+
+        notes
     }
 }
 
