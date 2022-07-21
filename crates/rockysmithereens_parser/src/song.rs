@@ -20,6 +20,11 @@ impl Song {
             .filter(move |level| level.difficulty <= difficulty)
             .flat_map(move |level| level.notes_between_time_iter(start_time, end_time))
     }
+
+    /// Get all notes.
+    pub fn notes_iter(&self) -> impl Iterator<Item = &Note> {
+        self.levels.iter().flat_map(move |level| level.notes_iter())
+    }
 }
 
 impl From<XmlSong> for Song {

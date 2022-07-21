@@ -21,7 +21,7 @@ pub fn ui(
     music_controller: Res<MusicController>,
     song: Res<Song>,
 ) {
-    let time_playing_secs = music_controller.time_playing.as_secs_f32();
+    let time_playing_secs = music_controller.time_playing().as_secs_f32();
 
     // Get the notes that will be played soon
     let notes = song.notes_between_time_iter(
@@ -42,8 +42,8 @@ pub fn ui(
             .allow_scroll(false)
             .include_x(-1.0)
             .include_x(NOTE_SPAWN_TIME)
-            .include_y(-1.0)
-            .include_y(7.0)
+            .include_y(-0.3)
+            .include_y(5.3)
             .show_x(false)
             .show_y(false)
             .show_axes([false, true])

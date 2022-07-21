@@ -1,5 +1,7 @@
 mod asset;
 mod filesystem;
+mod note;
+mod note_view;
 mod player;
 mod preview;
 mod ui;
@@ -20,6 +22,8 @@ use bevy::{
 use bevy_egui::EguiPlugin;
 use clap::Parser;
 use filesystem::FilesystemPlugin;
+use note::NotePlugin;
+use note_view::NoteViewPlugin;
 use player::PlayerPlugin;
 
 use preview::PreviewPlugin;
@@ -84,10 +88,13 @@ fn main() {
             .add_before::<AssetPlugin, _>(FilesystemPlugin)
     })
     .add_plugin(EguiPlugin)
+    .add_plugin(LookTransformPlugin)
     .add_plugin(WemPlugin)
     .add_plugin(PlayerPlugin)
     .add_plugin(UiPlugin)
     .add_plugin(PreviewPlugin)
+    .add_plugin(NoteViewPlugin)
+    .add_plugin(NotePlugin)
     .add_state(Phase::SongSelectionMenu)
     .init_resource::<State>()
     .add_asset::<RocksmithAsset>()

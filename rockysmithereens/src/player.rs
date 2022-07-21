@@ -13,7 +13,7 @@ use rockysmithereens_parser::level::Level;
 use crate::{wem::WemSource, Phase, State, LOADED_SONG};
 
 /// Time between this and the current time before a note is spawned.
-pub const NOTE_SPAWN_TIME: f32 = 10.0;
+pub const NOTE_SPAWN_TIME: f32 = 5.0;
 
 /// Music player event handler.
 #[derive(Debug, Default)]
@@ -23,7 +23,7 @@ pub struct MusicController {
     // Handle to the music source.
     source: Handle<WemSource>,
     // How far we are along with the song.
-    pub time_playing: Duration,
+    time_playing: Duration,
 }
 
 impl MusicController {
@@ -50,7 +50,6 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MusicController>()
             .init_resource::<Level>()
-            .add_system_set(SystemSet::on_update(Phase::Loading).with_system(load_song_information))
             .add_system_set(SystemSet::on_enter(Phase::Playing).with_system(load_song))
             .add_system_set(SystemSet::on_update(Phase::Playing).with_system(pause))
             .add_system_set(
@@ -62,7 +61,7 @@ impl Plugin for PlayerPlugin {
 
 /// Pause the music.
 #[profiling::function]
-pub fn pause(
+fn pause(
     keyboard_input: Res<Input<KeyCode>>,
     audio_sinks: Res<Assets<AudioSink>>,
     music_controller: Res<MusicController>,
@@ -80,7 +79,7 @@ pub fn pause(
 
 /// Update the duration based on if we are playing.
 #[profiling::function]
-pub fn update_playing_duration(
+fn update_playing_duration(
     audio_sinks: Res<Assets<AudioSink>>,
     mut music_controller: ResMut<MusicController>,
     time: Res<Time>,
@@ -101,7 +100,7 @@ pub fn update_playing_duration(
 
 /// Stop playing the song.
 #[profiling::function]
-pub fn exit(audio_sinks: Res<Assets<AudioSink>>, music_controller: Res<MusicController>) {
+fn exit(audio_sinks: Res<Assets<AudioSink>>, music_controller: Res<MusicController>) {
     // Unload the audio
     if let Some(sink) = audio_sinks.get(&music_controller.sink) {
         sink.stop()
@@ -113,7 +112,7 @@ pub fn exit(audio_sinks: Res<Assets<AudioSink>>, music_controller: Res<MusicCont
 
 /// Load the song.
 #[profiling::function]
-pub fn load_song(
+fn load_song(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     audio: Res<Audio<WemSource>>,
@@ -123,22 +122,5 @@ pub fn load_song(
         let music = asset_server.load(song.song_path());
         let handle = sinks.get_handle(audio.play(music.clone_weak()));
         commands.insert_resource(MusicController::new(handle, music));
-    }
-}
-
-/// Load the song information with all the notes.
-#[profiling::function]
-pub fn load_song_information(
-    mut commands: Commands,
-    state: Res<State>,
-    mut phase: ResMut<bevy::prelude::State<Phase>>,
-) {
-    if let Some(song) = &*LOADED_SONG.lock().unwrap() {
-        // TODO: handle errors
-        let parsed_song = song.parse_song_info(state.current_song.unwrap()).unwrap();
-
-        commands.insert_resource(parsed_song);
-
-        phase.set(Phase::Playing).unwrap();
     }
 }

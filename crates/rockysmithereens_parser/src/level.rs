@@ -20,6 +20,11 @@ impl Level {
             .iter()
             .filter(move |note| note.time >= start_time && note.time < end_time)
     }
+
+    /// Get all notes.
+    pub fn notes_iter(&self) -> impl Iterator<Item = &Note> {
+        self.notes.iter()
+    }
 }
 
 impl From<XmlLevel> for Level {
