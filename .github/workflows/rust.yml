@@ -1,0 +1,183 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+  pull_request:
+    branches:
+      - main
+    tags:
+      - v*
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+
+jobs:
+  # Run the `rustfmt` code formatter
+  rust:
+    name: cargo fmt & cargo clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: install dependencies
+        # run: sudo apt-get install -y libasound2-dev libwayland-cursor0 libxkbcommon-dev libwayland-dev
+        run: sudo apt-get install -y libwayland-cursor0 libxkbcommon-dev libwayland-dev
+
+      - name: install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: default
+          toolchain: stable
+          override: true
+
+      - name: cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --all
+
+      - name: cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  wasm:
+    name: wasm compile & deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          target: wasm32-unknown-unknown
+
+      - name: cargo build --release
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target wasm32-unknown-unknown
+
+      - name: create www dir
+        run: |
+          mkdir www
+          cp target/wasm32-unknown-unknown/release/*.wasm www
+          cp *.html www
+          cp *.js www
+
+      - name: deploy to github pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: www
+
+  # Build sources for every OS
+  github_build:
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Build release binaries
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - x86_64-apple-darwin
+          - x86_64-pc-windows-msvc
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            name: rockysmithereens-x86_64-unknown-linux-gnu
+          - target: x86_64-apple-darwin
+            os: macOS-latest
+            name: rockysmithereens-x86_64-apple-darwin
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            name: rockysmithereens-x86_64-pc-windows-msvc.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          target: ${{ matrix.target }}
+
+      - name: Install dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install -y libx11-dev libxi-dev libgl1-mesa-dev gcc-mingw-w64
+
+      - name: Build target
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target ${{ matrix.target }}
+
+      - name: Prepare build artifacts [Windows]
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd target/${{ matrix.target }}/release
+          strip rockysmithereens.exe
+          mv rockysmithereens.exe ../../../${{ matrix.name }}
+          cd -
+
+      - name: Prepare build artifacts [-nix]
+        if: matrix.os != 'windows-latest'
+        run: |
+          cd target/${{ matrix.target }}/release
+          strip rockysmithereens
+          mv rockysmithereens ../../../${{ matrix.name }}
+          cd -
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ matrix.name }}
+
+  # Create GitHub release with Rust build targets and release notes
+  github_release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Create GitHub Release
+    needs: github_build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      # These can be squashed when https://github.com/actions/download-artifact/issues/6 is closed
+      - name: Download releases from github_build
+        uses: actions/download-artifact@v1
+        with:
+          name: rockysmithereens-x86_64-unknown-linux-gnu
+          path: .
+      - name: Download releases from github_build
+        uses: actions/download-artifact@v1
+        with:
+          name: rockysmithereens-x86_64-apple-darwin
+          path: .
+      - name: Download releases from github_build
+        uses: actions/download-artifact@v1
+        with:
+          name: rockysmithereens-x86_64-pc-windows-msvc.exe
+          path: .
+
+      - name: Generate checksums
+        run: for file in rockysmithereens-*; do openssl dgst -sha256 -r "$file" | awk '{print $1}' > "${file}.sha256"; done
+
+      - name: Create GitHub release ${{ matrix.target }}
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            rockysmithereens-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
