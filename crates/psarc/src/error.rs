@@ -14,10 +14,13 @@ pub enum ArchiveReadError {
     UnsupportedVersion,
     #[error("corrupt file, reason: {0}")]
     Corrupt(String),
-    #[error("file does not exist")]
-    FileDoesNotExist,
-    #[error("path not found: {0}")]
-    PathNotFound(String),
+    #[error("file at index {0} does not exist")]
+    FileDoesNotExist(usize),
+    #[error("path not found: {path}, possible paths:\n{possible_paths:?}")]
+    PathNotFound {
+        path: String,
+        possible_paths: Vec<String>,
+    },
     #[error("parsing error: {0}")]
     Nom(String),
 }

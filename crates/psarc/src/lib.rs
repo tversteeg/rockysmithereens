@@ -115,7 +115,7 @@ impl PlaystationArchive {
         let entry = self
             .file_entries
             .get(file_index)
-            .ok_or(ArchiveReadError::FileDoesNotExist)?;
+            .ok_or(ArchiveReadError::FileDoesNotExist(file_index))?;
 
         if !entry.path.is_empty() {
             log::debug!("reading file '{}'", entry.path);
@@ -225,7 +225,10 @@ impl PlaystationArchive {
 
         let index = self
             .index_for_path(path)
-            .ok_or(ArchiveReadError::PathNotFound(path.to_string()))?;
+            .ok_or_else(|| ArchiveReadError::PathNotFound {
+                path: path.to_string(),
+                possible_paths: self.paths(),
+            })?;
 
         self.read_file(index)
     }
@@ -242,7 +245,10 @@ impl PlaystationArchive {
         );
         let index = self
             .index_for_path_ending_with(&searchable_path)
-            .ok_or(ArchiveReadError::PathNotFound(searchable_path))?;
+            .ok_or_else(|| ArchiveReadError::PathNotFound {
+                path: searchable_path,
+                possible_paths: self.paths(),
+            })?;
 
         self.read_file(index)
     }
@@ -293,6 +299,15 @@ impl PlaystationArchive {
             .flatten()
     }
 
+    /// Get the full path name for a path ending with a string, throw an error when it fails.
+    pub fn try_path_ending_with(&self, path: &str) -> Result<&str> {
+        self.path_ending_with(path)
+            .ok_or_else(|| ArchiveReadError::PathNotFound {
+                path: path.to_string(),
+                possible_paths: self.paths(),
+            })
+    }
+
     /// All file paths as an iterator.
     #[profiling::function]
     pub fn paths_iter(&'_ self) -> impl Iterator<Item = &'_ String> {
@@ -319,6 +334,14 @@ impl PlaystationArchive {
     /// Whether there are any files in the archive.
     pub fn is_empty(&self) -> bool {
         self.file_entries.is_empty()
+    }
+
+    /// All paths.
+    pub fn paths(&self) -> Vec<String> {
+        self.file_entries
+            .iter()
+            .map(|file_entry| file_entry.path.clone())
+            .collect()
     }
 
     /// Fill the file entry sizes with the calculated total size.

@@ -82,10 +82,7 @@ impl SongFile {
         }
 
         // Construct the full path
-        let song_path = archive
-            .path_ending_with(&wem_filenames[0])
-            .ok_or_else(|| ArchiveReadError::PathNotFound(wem_filenames[0].clone()))?
-            .to_string();
+        let song_path = archive.try_path_ending_with(&wem_filenames[0])?.to_string();
 
         Ok(Self {
             manifests,
@@ -126,15 +123,14 @@ impl SongFile {
 
     /// Get the parsed song information for a section.
     pub fn parse_song_info(&self, section_index: usize) -> Result<Song> {
+        let asset = &self.entities[section_index]
+            .sng_asset
+            .as_ref()
+            .ok_or_else(|| RocksmithArchiveError::MissingData("sng file".to_string()))?;
+
         // Get the song XML
-        let xml_string = read_urn_file_string(
-            &self.archive,
-            &self.entities[section_index]
-                .sng_asset
-                .as_ref()
-                .ok_or_else(|| RocksmithArchiveError::MissingData("sng file".to_string()))?,
-            "xml",
-        )?;
+        let xml_string = read_urn_file_string(&self.archive, asset, "xml")?;
+
         let xml = XmlSong::parse(&xml_string)?;
 
         Ok(Song::from(xml))
@@ -146,9 +142,7 @@ fn read_urn_file(archive: &PlaystationArchive, urn: &str, extension: &str) -> Re
     let urn_filename = urn_filename(urn)?;
 
     // Get the path of the file
-    let archive_path = archive
-        .path_ending_with(&format!("{}.{}", urn_filename, extension))
-        .ok_or_else(|| ArchiveReadError::FileDoesNotExist)?;
+    let archive_path = archive.try_path_ending_with(&format!("{}.{}", urn_filename, extension))?;
 
     Ok(archive.read_file_with_path(archive_path)?)
 }
@@ -162,9 +156,7 @@ fn read_urn_file_string(
     let urn_filename = urn_filename(urn)?;
 
     // Get the path of the file
-    let archive_path = archive
-        .path_ending_with(&format!("{}.{}", urn_filename, extension))
-        .ok_or_else(|| ArchiveReadError::FileDoesNotExist)?;
+    let archive_path = archive.try_path_ending_with(&format!("{}.{}", urn_filename, extension))?;
 
     // TODO: clean up archive api
     let index = archive.index_for_path(archive_path).unwrap();

@@ -28,6 +28,7 @@ use player::PlayerPlugin;
 
 use preview::PreviewPlugin;
 use rockysmithereens_parser::SongFile;
+use smooth_bevy_cameras::LookTransformPlugin;
 use ui::UiPlugin;
 use wem::WemPlugin;
 
