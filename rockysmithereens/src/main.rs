@@ -28,7 +28,6 @@ use player::PlayerPlugin;
 
 use preview::PreviewPlugin;
 use rockysmithereens_parser::SongFile;
-use smooth_bevy_cameras::LookTransformPlugin;
 use ui::UiPlugin;
 use wem::WemPlugin;
 
@@ -89,7 +88,6 @@ fn main() {
             .add_before::<AssetPlugin, _>(FilesystemPlugin)
     })
     .add_plugin(EguiPlugin)
-    .add_plugin(LookTransformPlugin)
     .add_plugin(WemPlugin)
     .add_plugin(PlayerPlugin)
     .add_plugin(UiPlugin)

@@ -1,15 +1,12 @@
-use std::{
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use bevy::{
-    asset::{AssetIo, AssetIoError, BoxedFuture},
+    asset::{AssetIo, AssetIoError, BoxedFuture, Metadata},
     prelude::{App, AssetServer, Plugin},
     tasks::IoTaskPool,
 };
 
-
-use crate::{LOADED_SONG};
+use crate::LOADED_SONG;
 
 /// Rocksmith archive representing a bevy virtual file system.
 pub struct Filesystem {
@@ -39,16 +36,16 @@ impl AssetIo for Filesystem {
         self.file.read_directory(path)
     }
 
-    fn is_directory(&self, path: &Path) -> bool {
-        self.file.is_directory(path)
-    }
-
     fn watch_path_for_changes(&self, path: &Path) -> Result<(), AssetIoError> {
         self.file.watch_path_for_changes(path)
     }
 
     fn watch_for_changes(&self) -> Result<(), AssetIoError> {
         self.file.watch_for_changes()
+    }
+
+    fn get_metadata(&self, path: &Path) -> Result<Metadata, AssetIoError> {
+        self.file.get_metadata(path)
     }
 }
 
@@ -63,14 +60,6 @@ impl Plugin for FilesystemPlugin {
             file: bevy::asset::create_platform_default_asset_io(app),
         };
 
-        // Get the default task pool
-        let task_pool = app
-            .world
-            .get_resource::<IoTaskPool>()
-            .expect("`IoTaskPool` resource not found")
-            .0
-            .clone();
-
-        app.insert_resource(AssetServer::new(asset_io, task_pool));
+        app.insert_resource(AssetServer::new(asset_io));
     }
 }

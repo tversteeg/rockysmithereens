@@ -2,11 +2,11 @@ use std::time::Duration;
 
 use bevy::{
     audio::{Audio, AudioSink},
-    core::Time,
     input::Input,
     prelude::{
         App, AssetServer, Assets, Commands, Handle, KeyCode, Plugin, Res, ResMut, SystemSet,
     },
+    time::Time,
 };
 use rockysmithereens_parser::level::Level;
 

@@ -18,7 +18,7 @@ pub fn ui(
     assets: ResMut<Assets<BevyImage>>,
 ) {
     if let Some(song) = &*LOADED_SONG.lock().unwrap() {
-        if assets.get(album_art_image_handle.clone_weak()).is_none() {
+        if assets.get(&album_art_image_handle.clone_weak()).is_none() {
             // Load the album art
             if let Some(path) = song.album_art_path() {
                 *album_art_image_handle = asset_server.load(path);

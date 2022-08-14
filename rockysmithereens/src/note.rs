@@ -75,7 +75,7 @@ pub enum StringNumber {
 impl StringNumber {
     /// Get the vertical position in the 3D world for this string.
     pub fn y(self) -> f32 {
-        self as u8 as f32 * 1.2
+        (Self::String6 as u8 as f32 - self as u8 as f32) * 1.2
     }
 }
 
@@ -159,6 +159,6 @@ fn inject_notes(
         commands.insert_resource(parsed_song);
 
         // We are ready to play
-        phase.set(Phase::Playing).unwrap();
+        phase.overwrite_set(Phase::Playing).unwrap();
     }
 }
