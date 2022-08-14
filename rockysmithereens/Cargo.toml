@@ -7,7 +7,7 @@ default-run = "rockysmithereens"
 [dependencies]
 rodio_wem = { path = "../crates/rodio_wem", features = ["profile-with-tracing"] }
 rockysmithereens_parser = { path = "../crates/rockysmithereens_parser", features = ["profile-with-tracing"] }
-anyhow = "1.0.58"
+anyhow = "1.0.61"
 bevy = { version = "0.7.0", default-features = false, features = ["render", "bevy_audio", "bevy_winit", "x11", "dds"] }
 bevy_egui = "0.14.0"
 clap = { version = "3.2.12", features = ["derive"] }
