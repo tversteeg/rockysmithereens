@@ -9,6 +9,21 @@ use bevy::{
     },
 };
 
+/// How high each note will get.
+pub const Y_NOTE_SCALE: f32 = 1.2;
+/// The z distance for each second for a note, determines the speed.
+pub const Z_NOTE_SCALE: f32 = 20.0;
+
+/// All strings.
+pub const STRINGS: [StringNumber; 6] = [
+    StringNumber::String1,
+    StringNumber::String2,
+    StringNumber::String3,
+    StringNumber::String4,
+    StringNumber::String5,
+    StringNumber::String6,
+];
+
 /// Marker for a regular note.
 #[derive(Debug, Component)]
 pub struct Note;
@@ -75,7 +90,7 @@ pub enum StringNumber {
 impl StringNumber {
     /// Get the vertical position in the 3D world for this string.
     pub fn y(self) -> f32 {
-        (Self::String6 as u8 as f32 - self as u8 as f32) * 1.2
+        (Self::String6 as u8 as f32 * Y_NOTE_SCALE - self as u8 as f32) * Y_NOTE_SCALE
     }
 }
 
@@ -149,7 +164,7 @@ fn inject_notes(
                     mesh: meshes.add(Mesh::from(Cube { size: 1.0 })),
                     // Color of the mesh is based on the string
                     material: materials.add(Color::from(string).into()),
-                    transform: Transform::from_xyz(x, string.y(), note.time),
+                    transform: Transform::from_xyz(x, string.y(), note.time * Z_NOTE_SCALE),
                     ..Default::default()
                 });
             }
