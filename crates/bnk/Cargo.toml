@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 nom = "7.1.1"
 profiling = { version = "1.0.6", optional = true }
-thiserror = "1.0.31"
+thiserror = "1.0.32"
 
 [features]
 profile-with-puffin = ["profiling/profile-with-puffin"]

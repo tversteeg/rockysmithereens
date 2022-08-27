@@ -2,7 +2,7 @@ use crate::player::{MusicController, NOTE_SPAWN_TIME};
 use bevy::prelude::{Local, Res, ResMut};
 use bevy_egui::{
     egui::{
-        plot::{Line, Plot, Text, VLine, Value, Values},
+        plot::{Line, Plot, Text, VLine},
         Color32, TextStyle, TopBottomPanel,
     },
     EguiContext,
@@ -57,26 +57,26 @@ pub fn ui(
                     notes.for_each(|note| {
                         // Get the starting position of the note
                         let x = note.time - time_playing_secs;
-                        let pos = Value::new(
-                            x,
-                            note.string as f32
-                                + note.bend.map(|bend| bend.0 * BEND_FACTOR).unwrap_or(0.0),
-                        );
+                        let pos = [
+                            x as f64,
+                            note.string as f64
+                                + note.bend.map(|bend| bend.0 * BEND_FACTOR).unwrap_or(0.0) as f64,
+                        ];
                         let color = string_number_to_color(note.string);
 
                         // Draw a line when a sustain is played
                         if let Some(sustain) = note.sustain {
                             // Add the bend if applicable
                             let second_pos = match note.bend {
-                                Some((_, end_bend)) => Value::new(
-                                    x + sustain,
-                                    note.string as f32 + end_bend * BEND_FACTOR,
-                                ),
-                                None => Value::new(x + sustain, note.string as f32),
+                                Some((_, end_bend)) => [
+                                    (x + sustain) as f64,
+                                    note.string as f64 + (end_bend * BEND_FACTOR) as f64,
+                                ],
+                                None => [(x + sustain) as f64, note.string as f64],
                             };
 
                             plot_ui.line(
-                                Line::new(Values::from_values(vec![pos, second_pos]))
+                                Line::new(vec![pos.into(), second_pos.into()])
                                     .color(color)
                                     .width(1.0),
                             );
@@ -84,17 +84,20 @@ pub fn ui(
 
                         // Draw an X when it's a mute
                         if note.mute {
-                            plot_ui.text(Text::new(pos, "X").color(Color32::GRAY));
+                            plot_ui.text(Text::new(pos.into(), "X").color(Color32::GRAY));
                         }
 
                         // Draw the number for the note if it's not an intermediate note
                         if note.show {
                             if note.slide_to_next {
                                 // Draw slides differently
-                                plot_ui
-                                    .text(Text::new(pos, format!("{}>", note.fret)).color(color));
+                                plot_ui.text(
+                                    Text::new(pos.into(), format!("{}>", note.fret)).color(color),
+                                );
                             } else {
-                                plot_ui.text(Text::new(pos, format!("{}", note.fret)).color(color));
+                                plot_ui.text(
+                                    Text::new(pos.into(), format!("{}", note.fret)).color(color),
+                                );
                             }
                         }
                     });
