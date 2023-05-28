@@ -10,7 +10,7 @@ rockysmithereens_parser = { path = "../crates/rockysmithereens_parser", features
 anyhow = "1.0.62"
 bevy = { version = "0.8.1", features = ["dds"] }
 bevy_egui = "0.16.0"
-clap = { version = "3.2.17", features = ["derive"] }
+clap = { version = "3.2.25", features = ["derive"] }
 rfd = "0.10.0"
 lazy_static = "1.4.0"
 rodio = { version = "0.15.0", default-features = false }
