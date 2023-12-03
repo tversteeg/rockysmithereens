@@ -8,8 +8,9 @@ default-run = "rockysmithereens"
 rodio_wem = { path = "../crates/rodio_wem", features = ["profile-with-tracing"] }
 rockysmithereens_parser = { path = "../crates/rockysmithereens_parser", features = ["profile-with-tracing"] }
 
-pixel-game-lib = { version = "0.4.0", default-features = false, features = ["embedded-assets", "default-font"] }
-miette = "5.10.0"
+rodio.workspace = true
+miette.workspace = true
+pixel-game-lib = { version = "0.4.1", default-features = false, features = ["embedded-assets", "default-font"] }
 taffy = "0.3.18"
-tokio = { version = "1.34.0", features = ["rt", "full"] }
+tokio = { version = "1.34.0", features = ["rt-multi-thread", "macros", "sync"] }
 rfd = "0.12.1"

@@ -7,6 +7,7 @@ pub use error::WemError;
 
 use std::{
     io::Write,
+    sync::{Arc, RwLock},
     time::{Duration, Instant},
     vec::IntoIter,
 };
@@ -60,13 +61,14 @@ pub struct WemDecoder {
     current_data: IntoIter<i16>,
     /// Whether we are done with this song.
     done: bool,
-    /// Exact time when the music started playing.
-    started: Instant,
+    /// Position of the player.
+    elapsed: Arc<RwLock<Duration>>,
 }
 
 impl WemDecoder {
     /// Attempts to decode the data as a wwise file containing vorbis.
     #[profiling::function]
+    #[must_use]
     pub fn new(bytes: &[u8]) -> Result<WemDecoder> {
         let WemParser {
             comment_header,
@@ -87,6 +89,9 @@ impl WemDecoder {
 
         let previous_window = PreviousWindowRight::new();
 
+        // No time has elapsed yet
+        let elapsed = Arc::new(RwLock::new(Duration::from_secs(0)));
+
         let mut this = Self {
             fmt,
             previous_window,
@@ -97,7 +102,7 @@ impl WemDecoder {
             current_data: Vec::new().into_iter(),
             done: false,
             current_packet: 0,
-            started: Instant::now(),
+            elapsed,
         };
 
         // The first read initializes lewton
@@ -109,12 +114,36 @@ impl WemDecoder {
     }
 
     /// Get the raw vorbis info.
+    #[must_use]
     pub fn into_raw(self) -> (HeaderSet, Vec<Packet>) {
         ((self.ident, self.comment, self.setup), self.packets)
     }
 
+    /// Calculate how long the song will play.
+    #[must_use]
+    pub fn total_duration(&self) -> Result<Duration> {
+        // Calculate the total amount of samples
+        let mut samples_total = 0;
+        for packet in self.packets.iter() {
+            samples_total +=
+                lewton::audio::get_decoded_sample_count(&self.ident, &self.setup, &packet.data)?;
+        }
+
+        // Calculate the total duration from the total amount of samples
+        Ok(Duration::from_secs_f64(
+            samples_total as f64 / self.fmt.sample_rate as f64 / self.fmt.channels as f64,
+        ))
+    }
+
+    /// Reference to a lock holding how long the file is playing.
+    #[must_use]
+    pub fn elapsed_ref(&self) -> Arc<RwLock<Duration>> {
+        self.elapsed.clone()
+    }
+
     /// Read a packet.
     #[profiling::function]
+    #[must_use]
     fn read_packet(&mut self) -> Result<()> {
         let audio: InterleavedSamples<_> = lewton::audio::read_audio_packet_generic(
             &self.ident,
@@ -122,6 +151,11 @@ impl WemDecoder {
             &self.packets[self.current_packet].data,
             &mut self.previous_window,
         )?;
+
+        // Update the playing time
+        let packet_duration =
+            audio.samples.len() as f64 / self.fmt.sample_rate as f64 / audio.channel_count as f64;
+        *self.elapsed.write().unwrap() += Duration::from_secs_f64(packet_duration);
 
         self.current_data = audio.samples.into_iter();
 
@@ -132,11 +166,6 @@ impl WemDecoder {
         self.done = self.current_packet == self.packets.len();
 
         Ok(())
-    }
-
-    /// How long this audio has been playing.
-    pub fn elapsed(&self) -> Duration {
-        self.started.elapsed()
     }
 }
 

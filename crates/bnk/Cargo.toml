@@ -4,9 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-nom = "7.1.1"
-profiling = { version = "1.0.6", optional = true }
-thiserror = "1.0.32"
+thiserror.workspace = true
+
+nom = "7.1.3"
+profiling = { version = "1.0.11", optional = true }
 
 [features]
 profile-with-puffin = ["profiling/profile-with-puffin"]

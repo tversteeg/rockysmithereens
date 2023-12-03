@@ -18,7 +18,7 @@ use crate::{
 };
 
 /// Parsed Rockmith 2014 .psarc file.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SongFile {
     pub entities: Vec<SimplifiedEntity>,
     pub manifests: Vec<Manifest>,

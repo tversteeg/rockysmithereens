@@ -1,10 +1,12 @@
+mod game;
 mod ui;
 
 use std::sync::{
     atomic::{AtomicBool, Ordering},
-    Mutex,
+    Arc, Mutex, RwLock,
 };
 
+use game::Game;
 use miette::Result;
 use pixel_game_lib::{
     gui::{
@@ -16,13 +18,24 @@ use pixel_game_lib::{
     window::{KeyCode, WindowConfig},
 };
 use rfd::AsyncFileDialog;
+use rockysmithereens_parser::SongFile;
 use taffy::{prelude::Size, style::Style};
 use ui::home::Homescreen;
 
+/// Which screen we are currently on.
+pub enum Phase {
+    /// Gui for the homescreen.
+    Homescreen(Homescreen),
+    /// Gui for playing.
+    Game(Game),
+}
+
 /// Game state passed around the update and render functions.
 pub struct State {
-    /// Gui for the homescreen.
-    homescreen: Homescreen,
+    /// Current screen.
+    screen: Phase,
+    /// Bytes for the file.
+    loaded_song: Arc<RwLock<Option<SongFile>>>,
 }
 
 /// Open an empty window.
@@ -34,9 +47,13 @@ async fn main() -> Result<()> {
         ..Default::default()
     };
 
+    // The file to open, can be set from all threads
+    let loaded_song = Arc::new(RwLock::new(None));
+
     // Create the shareable game state
     let state = State {
-        homescreen: Homescreen::new(window_config.buffer_size.as_()),
+        screen: Phase::Homescreen(Homescreen::new(window_config.buffer_size.as_())),
+        loaded_song: loaded_song.clone(),
     };
 
     // Open a new thread waiting for the file dialog to be activated
@@ -53,7 +70,19 @@ async fn main() -> Result<()> {
                 .add_filter("Rocksmith", &["psarc"])
                 .pick_file()
                 .await
-            {}
+            {
+                // Read the bytes from the file
+                let bytes = file.read().await;
+
+                // Parse the bytes into the song
+                // TODO: report error
+                let song = SongFile::parse(&bytes).expect("Failed parsing song");
+
+                // Set the value so the state can read it
+                *loaded_song.write().unwrap() = Some(song);
+
+                println!("Loaded and parsed song '{}'", file.file_name());
+            }
         }
     });
 
@@ -63,17 +92,35 @@ async fn main() -> Result<()> {
         window_config.clone(),
         // Update loop exposing input events we can handle, this is where you would handle the game logic
         move |state, input, mouse_pos, _dt| {
-            if state.homescreen.update(input, mouse_pos) {
-                // Release the lock for the blocking async thread
-                open_file_tx.send(()).expect("Readers dropped");
+            match &mut state.screen {
+                Phase::Homescreen(homescreen) => {
+                    if homescreen.update(input, mouse_pos) {
+                        // Release the lock for the blocking async thread
+                        open_file_tx.send(()).expect("Readers dropped");
+                    }
+
+                    // Switch the screen when a song is loaded
+                    if let Some(song) = state.loaded_song.read().unwrap().as_ref() {
+                        state.screen =
+                            Phase::Game(Game::new(song.clone()).expect("Failed loading song"));
+                    }
+                }
+                Phase::Game(game) => {
+                    game.update(input, mouse_pos);
+                }
             }
 
             // Exit when escape is pressed
             input.key_pressed(KeyCode::Escape)
         },
         // Render loop exposing the pixel buffer we can mutate
-        move |state, canvas, _dt| {
-            state.homescreen.render(canvas);
+        move |state, canvas, _dt| match &mut state.screen {
+            Phase::Homescreen(homescreen) => {
+                homescreen.render(canvas);
+            }
+            Phase::Game(game) => {
+                game.render(canvas);
+            }
         },
     )?;
 

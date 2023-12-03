@@ -6,7 +6,7 @@ use serde::Deserialize;
 use crate::error::Result;
 
 /// The JSON manifest with the song information.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Manifest {
     pub insert_root: String,
@@ -40,14 +40,14 @@ impl Manifest {
 }
 
 /// Various data entries.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 struct Entry {
     attributes: Attributes,
 }
 
 /// Various data entries.
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default, rename_all = "PascalCase")]
 pub struct Attributes {
     /// Different properties of the song.
@@ -159,7 +159,7 @@ impl Attributes {
 }
 
 /// Template for a chord.
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct ChordTemplate {
     pub chord_id: u32,
@@ -172,7 +172,7 @@ pub struct ChordTemplate {
 /// Properties of this arrangement.
 ///
 /// The number is a boolean where 0 is false and 1 zero.
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ArrangementProperties {
     pub bonus_arr: u8,
@@ -211,7 +211,7 @@ pub struct ArrangementProperties {
 }
 
 /// Different string tunings.
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Tuning {
     pub string_0: i8,
@@ -223,7 +223,7 @@ pub struct Tuning {
 }
 
 /// Information about the different phrases.
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default, rename_all = "PascalCase")]
 pub struct PhraseIteration {
     pub phrase_index: u16,
@@ -234,7 +234,7 @@ pub struct PhraseIteration {
 }
 
 /// Seems to be double information for [`PhraseIteration`].
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default, rename_all = "PascalCase")]
 pub struct Phrase {
     pub max_difficulty: u16,
@@ -243,7 +243,7 @@ pub struct Phrase {
 }
 
 /// Information about the different sections.
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default, rename_all = "PascalCase")]
 pub struct Section {
     pub name: String,
