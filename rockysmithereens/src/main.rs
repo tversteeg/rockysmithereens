@@ -20,12 +20,12 @@ use pixel_game_lib::{
 use rfd::AsyncFileDialog;
 use rockysmithereens_parser::SongFile;
 use taffy::{prelude::Size, style::Style};
-use ui::home::Homescreen;
+use ui::home::HomescreenGui;
 
 /// Which screen we are currently on.
 pub enum Phase {
     /// Gui for the homescreen.
-    Homescreen(Homescreen),
+    Homescreen(HomescreenGui),
     /// Gui for playing.
     Game(Game),
 }
@@ -52,7 +52,7 @@ async fn main() -> Result<()> {
 
     // Create the shareable game state
     let state = State {
-        screen: Phase::Homescreen(Homescreen::new(window_config.buffer_size.as_())),
+        screen: Phase::Homescreen(HomescreenGui::new(window_config.buffer_size.as_())),
         loaded_song: loaded_song.clone(),
     };
 
@@ -101,8 +101,10 @@ async fn main() -> Result<()> {
 
                     // Switch the screen when a song is loaded
                     if let Some(song) = state.loaded_song.read().unwrap().as_ref() {
-                        state.screen =
-                            Phase::Game(Game::new(song.clone()).expect("Failed loading song"));
+                        state.screen = Phase::Game(
+                            Game::new(song.clone(), window_config.buffer_size.as_())
+                                .expect("Failed loading song"),
+                        );
                     }
                 }
                 Phase::Game(game) => {

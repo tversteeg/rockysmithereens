@@ -11,7 +11,7 @@ use pixel_game_lib::{
 use taffy::{prelude::Size, style::Style};
 
 /// Gui state for the homescreen.
-pub struct Homescreen {
+pub struct HomescreenGui {
     /// Window size.
     window_size: Extent2<f32>,
     /// Button reference for opening the file.
@@ -20,7 +20,7 @@ pub struct Homescreen {
     gui: Gui,
 }
 
-impl Homescreen {
+impl HomescreenGui {
     /// Create the home screen.
     pub fn new(window_size: Extent2<f32>) -> Self {
         // Create a new Gui

@@ -4,10 +4,16 @@ use std::{
 };
 
 use miette::{IntoDiagnostic, Result};
-use pixel_game_lib::{canvas::Canvas, vek::Vec2, window::Input};
+use pixel_game_lib::{
+    canvas::Canvas,
+    vek::{Extent2, Vec2},
+    window::Input,
+};
 use rockysmithereens_parser::SongFile;
 use rodio::{OutputStream, Sink};
 use rodio_wem::WemDecoder;
+
+use crate::ui::playing::PlayingGui;
 
 /// Main game.
 pub struct Game {
@@ -21,11 +27,13 @@ pub struct Game {
     elapsed: Arc<RwLock<Duration>>,
     /// How long the song will play.
     total_duration: Duration,
+    /// In-game Gui.
+    gui: PlayingGui,
 }
 
 impl Game {
     /// Start the game with a song.
-    pub fn new(song: SongFile) -> Result<Self> {
+    pub fn new(song: SongFile, window_size: Extent2<f32>) -> Result<Self> {
         // Decode the song
         let decoder = song.music_decoder().into_diagnostic()?;
 
@@ -40,21 +48,26 @@ impl Game {
         let sink = Sink::try_new(&stream_handle).into_diagnostic()?;
         sink.append(decoder);
 
+        // Setup the Gui
+        let gui = PlayingGui::new(window_size);
+
         Ok(Self {
             song,
             sink,
             stream,
             elapsed,
             total_duration,
+            gui,
         })
     }
 
     /// Update step of the game.
     pub fn update(&mut self, input: &Input, mouse_pos: Option<Vec2<usize>>) {
-        println!(
-            "{:?}/{:?}",
-            self.elapsed.read().unwrap(),
-            self.total_duration
+        self.gui.update(
+            *self.elapsed.read().unwrap(),
+            self.total_duration,
+            input,
+            mouse_pos,
         );
     }
 
@@ -62,5 +75,7 @@ impl Game {
     pub fn render(&mut self, canvas: &mut Canvas) {
         // Reset the canvas
         canvas.fill(0xFFFFFFFF);
+
+        self.gui.render(canvas);
     }
 }
