@@ -247,6 +247,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bincode"
+version = "1.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "bindgen"
 version = "0.69.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -697,6 +706,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b540bd8bc810d3885c6ea91e2018302f68baba2129ab3e88f32389ee9370880d"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "crossbeam-channel"
+version = "0.5.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a33c2bf77f2df06183c3aa30d1e96c0695a313d4f9c453cc3762a6db39f99200"
+dependencies = [
+ "cfg-if",
+ "crossbeam-utils",
 ]
 
 [[package]]
@@ -1511,6 +1530,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "lz4_flex"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ea9b256699eda7b0387ffbc776dd625e28bde3918446381781245b7a50349d8"
+
+[[package]]
 name = "mach2"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2231,9 +2256,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e0b84517b2fb755da3a634bc030fcbc7b6337a786aa25a7fb350cdd51ab5e15"
 dependencies = [
  "anyhow",
+ "bincode",
  "byteorder",
  "cfg-if",
+ "lz4_flex",
  "once_cell",
+ "parking_lot",
+ "serde",
+]
+
+[[package]]
+name = "puffin_http"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcf8e52cf00569807b02e8089a85e859c00476182730cda9718c94b12cdc31b8"
+dependencies = [
+ "anyhow",
+ "crossbeam-channel",
+ "log",
+ "puffin 0.18.0",
 ]
 
 [[package]]
@@ -2414,6 +2455,8 @@ version = "0.1.0"
 dependencies = [
  "miette",
  "pixel-game-lib",
+ "profiling",
+ "puffin_http",
  "rfd",
  "rockysmithereens_parser",
  "rodio",

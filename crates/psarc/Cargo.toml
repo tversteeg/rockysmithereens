@@ -3,6 +3,14 @@ name = "psarc"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+profile-with-puffin = ["profiling/profile-with-puffin"]
+profile-with-optick = ["profiling/profile-with-optick"]
+profile-with-superluminal = ["profiling/profile-with-superluminal"]
+profile-with-tracing = ["profiling/profile-with-tracing"]
+profile-with-tracy = ["profiling/profile-with-tracy"]
+
 [dependencies]
 thiserror.workspace = true
 
@@ -13,11 +21,4 @@ cfb-mode = "0.8.2"
 hex-literal = "0.3.4"
 flate2 = "1.0.28"
 log = "0.4.20"
-profiling = { version = "1.0.11", optional = true }
-
-[features]
-profile-with-puffin = ["profiling/profile-with-puffin"]
-profile-with-optick = ["profiling/profile-with-optick"]
-profile-with-superluminal = ["profiling/profile-with-superluminal"]
-profile-with-tracing = ["profiling/profile-with-tracing"]
-profile-with-tracy = ["profiling/profile-with-tracy"]
+profiling = "1.0.11"

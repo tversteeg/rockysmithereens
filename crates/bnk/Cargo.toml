@@ -3,15 +3,16 @@ name = "bnk"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
-thiserror.workspace = true
-
-nom = "7.1.3"
-profiling = { version = "1.0.11", optional = true }
-
 [features]
+default = []
 profile-with-puffin = ["profiling/profile-with-puffin"]
 profile-with-optick = ["profiling/profile-with-optick"]
 profile-with-superluminal = ["profiling/profile-with-superluminal"]
 profile-with-tracing = ["profiling/profile-with-tracing"]
 profile-with-tracy = ["profiling/profile-with-tracy"]
+
+[dependencies]
+thiserror.workspace = true
+
+nom = "7.1.3"
+profiling = "1.0.11"

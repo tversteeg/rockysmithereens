@@ -41,6 +41,15 @@ pub struct State {
 /// Open an empty window.
 #[tokio::main]
 async fn main() -> Result<()> {
+    profiling::register_thread!("Main Thread");
+
+    // Start a puffin server when profiling
+    #[cfg(feature = "profile")]
+    let _puffin_server =
+        puffin_http::Server::new(&format!("127.0.0.1:{}", puffin_http::DEFAULT_PORT)).unwrap();
+    #[cfg(feature = "profile")]
+    profiling::puffin::set_scopes_on(true);
+
     // Window configuration with default pixel size and scaling
     let window_config = WindowConfig {
         buffer_size: Extent2::new(600, 480),
@@ -92,6 +101,8 @@ async fn main() -> Result<()> {
         window_config.clone(),
         // Update loop exposing input events we can handle, this is where you would handle the game logic
         move |state, input, mouse_pos, _dt| {
+            profiling::scope!("update");
+
             match &mut state.screen {
                 Phase::Homescreen(homescreen) => {
                     if homescreen.update(input, mouse_pos) {
@@ -112,16 +123,22 @@ async fn main() -> Result<()> {
                 }
             }
 
+            profiling::finish_frame!();
+
             // Exit when escape is pressed
             input.key_pressed(KeyCode::Escape)
         },
         // Render loop exposing the pixel buffer we can mutate
-        move |state, canvas, _dt| match &mut state.screen {
-            Phase::Homescreen(homescreen) => {
-                homescreen.render(canvas);
-            }
-            Phase::Game(game) => {
-                game.render(canvas);
+        move |state, canvas, _dt| {
+            profiling::scope!("render");
+
+            match &mut state.screen {
+                Phase::Homescreen(homescreen) => {
+                    homescreen.render(canvas);
+                }
+                Phase::Game(game) => {
+                    game.render(canvas);
+                }
             }
         },
     )?;
