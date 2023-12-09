@@ -5,11 +5,7 @@ edition = "2021"
 
 [features]
 default = []
-profile-with-puffin = ["profiling/profile-with-puffin"]
-profile-with-optick = ["profiling/profile-with-optick"]
-profile-with-superluminal = ["profiling/profile-with-superluminal"]
-profile-with-tracing = ["profiling/profile-with-tracing"]
-profile-with-tracy = ["profiling/profile-with-tracy"]
+profiling = ["dep:puffin"]
 
 [dependencies]
 rodio.workspace = true
@@ -20,4 +16,4 @@ byteorder = "1.5.0"
 #lewton = "0.10.2"
 lewton = { git = "https://github.com/tversteeg/lewton.git", branch = "clone" }
 nom = "7.1.3"
-profiling = "1.0.11"
+puffin = { version = "0.18", optional = true }

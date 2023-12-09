@@ -61,15 +61,19 @@ pub struct WemDecoder {
     current_data: IntoIter<i16>,
     /// Whether we are done with this song.
     done: bool,
-    /// Position of the player.
+    /// Position of the player, updated every second.
     elapsed: Arc<RwLock<Duration>>,
+    /// Time added to elapsed every 900ms, updated every frame.
+    elapsed_frame: f64,
 }
 
 impl WemDecoder {
     /// Attempts to decode the data as a wwise file containing vorbis.
-    #[profiling::function]
     #[must_use]
     pub fn new(bytes: &[u8]) -> Result<WemDecoder> {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
         let WemParser {
             comment_header,
             ident_header,
@@ -103,6 +107,7 @@ impl WemDecoder {
             done: false,
             current_packet: 0,
             elapsed,
+            elapsed_frame: 0.0,
         };
 
         // The first read initializes lewton
@@ -142,8 +147,6 @@ impl WemDecoder {
     }
 
     /// Read a packet.
-    #[profiling::function]
-    #[must_use]
     fn read_packet(&mut self) -> Result<()> {
         let audio: InterleavedSamples<_> = lewton::audio::read_audio_packet_generic(
             &self.ident,
@@ -153,9 +156,14 @@ impl WemDecoder {
         )?;
 
         // Update the playing time
-        let packet_duration =
+        self.elapsed_frame +=
             audio.samples.len() as f64 / self.fmt.sample_rate as f64 / audio.channel_count as f64;
-        *self.elapsed.write().unwrap() += Duration::from_secs_f64(packet_duration);
+
+        // Update the public facing elapsed time every 900ms, this is not done every packet because it's slow
+        if self.elapsed_frame >= 0.9 {
+            *self.elapsed.write().unwrap() += Duration::from_secs_f64(self.elapsed_frame);
+            self.elapsed_frame = 0.0;
+        }
 
         self.current_data = audio.samples.into_iter();
 
@@ -242,8 +250,10 @@ pub struct WemParser {
 
 impl WemParser {
     /// Attempts to decode the data as a wwise file containing vorbis.
-    #[profiling::function]
     pub fn new(bytes: &[u8]) -> Result<Self> {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
         // Get the endianness
         let (i, endianness) = parse_endianness_by_header(bytes)?;
 
@@ -304,8 +314,10 @@ pub struct Fmt {
 
 impl Fmt {
     /// Create a fake vorbis identification header packet.
-    #[profiling::function]
     pub fn to_ident_packet(&self) -> Result<Vec<u8>> {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
         let mut bytes = Vec::with_capacity(30);
 
         // The packet type (ident header)
@@ -348,11 +360,13 @@ pub enum Chunk {
 
 impl Chunk {
     /// Parse with nom the bytes for this chunk.
-    #[profiling::function]
     pub fn parse<'a>(
         i: &'a [u8],
         endianness: Endianness,
     ) -> IResult<&'a [u8], Self, VerboseError<&'a [u8]>> {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
         // Get the chunk type string
         let (i, chunk_type_bytes) = context("chunk type", take(4usize))(i)?;
         let chunk_type: &[u8; 4] = chunk_type_bytes
@@ -418,10 +432,12 @@ impl ChunkList for Vec<Chunk> {
 /// Parse header to get the endianness of the file.
 ///
 /// `true` means it's little endian.
-#[profiling::function]
 fn parse_endianness_by_header<'a>(
     i: &'a [u8],
 ) -> IResult<&'a [u8], Endianness, VerboseError<&'a [u8]>> {
+    #[cfg(feature = "profiling")]
+    puffin::profile_function!();
+
     let (i, header) = context("RIFF/RIFX header", alt((tag("RIFF"), tag("RIFX"))))(i)?;
 
     Ok((
@@ -435,11 +451,13 @@ fn parse_endianness_by_header<'a>(
 }
 
 /// Parse chunks.
-#[profiling::function]
 fn parse_chunks<'a>(
     i: &'a [u8],
     endianness: Endianness,
 ) -> IResult<&'a [u8], Vec<Chunk>, VerboseError<&'a [u8]>> {
+    #[cfg(feature = "profiling")]
+    puffin::profile_function!();
+
     let mut chunks = Vec::new();
 
     // Keep track of the chunks by way of the reported sizes
@@ -458,12 +476,14 @@ fn parse_chunks<'a>(
 }
 
 /// Parse the fmt chunk.
-#[profiling::function]
 fn parse_fmt_chunk<'a>(
     data: &'a [u8],
     endianness: Endianness,
     size: u32,
 ) -> IResult<&'a [u8], Chunk, VerboseError<&'a [u8]>> {
+    #[cfg(feature = "profiling")]
+    puffin::profile_function!();
+
     // Read a constant we will ignore
     let (i, _) = context("fmt chunk codec id", tag(b"\xFF\xFF"))(data)?;
 
@@ -516,8 +536,10 @@ fn parse_fmt_chunk<'a>(
 }
 
 /// Create a fake vorbis comment header packet.
-#[profiling::function]
 pub fn empty_comment_packet() -> Result<Vec<u8>> {
+    #[cfg(feature = "profiling")]
+    puffin::profile_function!();
+
     let mut bytes = Vec::new();
 
     // The packet type (comment header)
@@ -547,12 +569,14 @@ pub fn empty_comment_packet() -> Result<Vec<u8>> {
 /// Create a fake vorbis setup header packet.
 ///
 /// Also returns `mode_blockflag` and `mode_bits`.
-#[profiling::function]
 pub fn create_setup_packet(
     endianness: Endianness,
     fmt: &Fmt,
     data: &[u8],
 ) -> Result<(Vec<u8>, Vec<bool>, u32)> {
+    #[cfg(feature = "profiling")]
+    puffin::profile_function!();
+
     let mut bytes = BitVec::<_, Lsb0>::new();
 
     // The packet type (setup header)

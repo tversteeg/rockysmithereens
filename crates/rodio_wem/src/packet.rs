@@ -17,13 +17,15 @@ pub struct Packet {
 }
 
 impl Packet {
-    #[profiling::function]
     pub fn parse<'a>(
         data: &'a [u8],
         mode_block_flags: &[bool],
         mode_bits: usize,
         previous_window_flag: bool,
     ) -> Result<(&'a [u8], Self)> {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
         let (packet, size) = context("packet size", le_u16)(data)?;
         let size = size as usize;
 
@@ -93,12 +95,14 @@ impl std::fmt::Debug for Packet {
 }
 
 /// Parse the data bytes into packets.
-#[profiling::function]
 pub fn parse_into_packets(
     mut i: &[u8],
     mode_block_flag: Vec<bool>,
     mode_bits: u32,
 ) -> Result<Vec<Packet>> {
+    #[cfg(feature = "profiling")]
+    puffin::profile_function!();
+
     let mut packets = Vec::new();
 
     // Keep track of the block_flag of the previous packet
