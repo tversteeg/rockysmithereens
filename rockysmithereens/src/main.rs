@@ -70,7 +70,10 @@ async fn main() -> Result<()> {
         let mut open_file_rx = open_file_rx.clone();
         loop {
             // Wait for the value to "change"
-            open_file_rx.changed().await.expect("Sender dropped");
+            if open_file_rx.changed().await.is_err() {
+                // Sender got dropped, meaning the application is closing
+                return;
+            }
 
             // Open the file dialog
             if let Some(file) = AsyncFileDialog::new()

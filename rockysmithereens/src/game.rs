@@ -1,6 +1,6 @@
 use std::{
     sync::{Arc, RwLock},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use miette::{IntoDiagnostic, Result};
@@ -24,7 +24,7 @@ pub struct Game {
     /// Audio stream.
     stream: OutputStream,
     /// Position of the player.
-    elapsed: Arc<RwLock<Duration>>,
+    elapsed: Arc<RwLock<(Duration, Instant)>>,
     /// How long the song will play.
     total_duration: Duration,
     /// In-game Gui.
@@ -51,6 +51,10 @@ impl Game {
         // Setup the Gui
         let gui = PlayingGui::new(window_size);
 
+        // Use the current time as the snapshot
+        let elapsed_snapshot = Instant::now();
+        let elapsed_previous = Duration::default();
+
         Ok(Self {
             song,
             sink,
@@ -63,12 +67,14 @@ impl Game {
 
     /// Update step of the game.
     pub fn update(&mut self, input: &Input, mouse_pos: Option<Vec2<usize>>) {
-        self.gui.update(
-            *self.elapsed.read().unwrap(),
-            self.total_duration,
-            input,
-            mouse_pos,
-        );
+        // Calculate the actual elapsed time from the moment the snapshot is taken and the duration
+        let elapsed = {
+            let (elapsed, snapshot) = *self.elapsed.read().unwrap();
+            elapsed + (Instant::now() - snapshot)
+        };
+
+        self.gui
+            .update(elapsed, self.total_duration, input, mouse_pos);
     }
 
     /// Render the game.

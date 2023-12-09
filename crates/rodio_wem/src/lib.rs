@@ -61,15 +61,14 @@ pub struct WemDecoder {
     current_data: IntoIter<i16>,
     /// Whether we are done with this song.
     done: bool,
-    /// Position of the player, updated every second.
-    elapsed: Arc<RwLock<Duration>>,
+    /// Position of the player and when it's taken, updated every 900ms.
+    elapsed: Arc<RwLock<(Duration, Instant)>>,
     /// Time added to elapsed every 900ms, updated every frame.
     elapsed_frame: f64,
 }
 
 impl WemDecoder {
     /// Attempts to decode the data as a wwise file containing vorbis.
-    #[must_use]
     pub fn new(bytes: &[u8]) -> Result<WemDecoder> {
         #[cfg(feature = "profiling")]
         puffin::profile_function!();
@@ -94,7 +93,7 @@ impl WemDecoder {
         let previous_window = PreviousWindowRight::new();
 
         // No time has elapsed yet
-        let elapsed = Arc::new(RwLock::new(Duration::from_secs(0)));
+        let elapsed = Arc::new(RwLock::new((Duration::default(), Instant::now())));
 
         let mut this = Self {
             fmt,
@@ -125,7 +124,6 @@ impl WemDecoder {
     }
 
     /// Calculate how long the song will play.
-    #[must_use]
     pub fn total_duration(&self) -> Result<Duration> {
         // Calculate the total amount of samples
         let mut samples_total = 0;
@@ -142,7 +140,7 @@ impl WemDecoder {
 
     /// Reference to a lock holding how long the file is playing.
     #[must_use]
-    pub fn elapsed_ref(&self) -> Arc<RwLock<Duration>> {
+    pub fn elapsed_ref(&self) -> Arc<RwLock<(Duration, Instant)>> {
         self.elapsed.clone()
     }
 
@@ -161,7 +159,13 @@ impl WemDecoder {
 
         // Update the public facing elapsed time every 900ms, this is not done every packet because it's slow
         if self.elapsed_frame >= 0.9 {
-            *self.elapsed.write().unwrap() += Duration::from_secs_f64(self.elapsed_frame);
+            let mut elapsed = self.elapsed.write().unwrap();
+            // Set the elapsed time
+            elapsed.0 += Duration::from_secs_f64(self.elapsed_frame);
+            // Set te snapshot time
+            elapsed.1 = Instant::now();
+
+            // Reset the frame time
             self.elapsed_frame = 0.0;
         }
 
