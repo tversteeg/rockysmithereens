@@ -50,7 +50,7 @@ async fn main() -> Result<()> {
 
     // Window configuration with default pixel size and scaling
     let window_config = WindowConfig {
-        buffer_size: Extent2::new(600, 480),
+        buffer_size: Extent2::new(1024, 300),
         ..Default::default()
     };
 
@@ -118,7 +118,7 @@ async fn main() -> Result<()> {
                     // Switch the screen when a song is loaded
                     if let Some(song) = state.loaded_song.read().unwrap().as_ref() {
                         state.screen = Phase::Game(
-                            Game::new(song.clone(), window_config.buffer_size.as_())
+                            Game::new(song.clone(), 0, window_config.buffer_size.as_())
                                 .expect("Failed loading song"),
                         );
                     }

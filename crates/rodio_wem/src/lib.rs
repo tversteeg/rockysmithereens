@@ -38,6 +38,11 @@ use crate::{
     utils::{log2, read, read_bool, read_write, read_write_bool, write},
 };
 
+/// Interval in seconds at which the elapsed data will be written.
+///
+/// Lower numbers means more accurate timing but also less performance.
+const ELAPSED_WRITE_INTERVAL: f64 = 0.5;
+
 /// Decoder for an Wem file.
 #[derive(Clone)]
 pub struct WemDecoder {
@@ -61,9 +66,9 @@ pub struct WemDecoder {
     current_data: IntoIter<i16>,
     /// Whether we are done with this song.
     done: bool,
-    /// Position of the player and when it's taken, updated every 900ms.
+    /// Position of the player and when it's taken, updated every write interval.
     elapsed: Arc<RwLock<(Duration, Instant)>>,
-    /// Time added to elapsed every 900ms, updated every frame.
+    /// Time added to elapsed, updated every frame, reset every write interval.
     elapsed_frame: f64,
 }
 
@@ -157,8 +162,8 @@ impl WemDecoder {
         self.elapsed_frame +=
             audio.samples.len() as f64 / self.fmt.sample_rate as f64 / audio.channel_count as f64;
 
-        // Update the public facing elapsed time every 900ms, this is not done every packet because it's slow
-        if self.elapsed_frame >= 0.9 {
+        // Update the public facing elapsed time every write interval, this is not done every packet because it's slow
+        if self.elapsed_frame >= ELAPSED_WRITE_INTERVAL {
             let mut elapsed = self.elapsed.write().unwrap();
             // Set the elapsed time
             elapsed.0 += Duration::from_secs_f64(self.elapsed_frame);

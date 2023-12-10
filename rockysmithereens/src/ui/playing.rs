@@ -82,9 +82,6 @@ impl PlayingGui {
 
     /// Render the Gui.
     pub fn render(&mut self, canvas: &mut Canvas) {
-        // Reset the canvas
-        canvas.fill(0xFFFFFFFF);
-
         // Render the button manually
         let label: &mut Label = self.gui.widget_mut(self.playing_label_node).unwrap();
         label.render(canvas);

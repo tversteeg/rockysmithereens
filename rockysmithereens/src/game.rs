@@ -1,11 +1,14 @@
 use std::{
+    collections::HashMap,
     sync::{Arc, RwLock},
     time::{Duration, Instant},
 };
 
+use itertools::Itertools;
 use miette::{IntoDiagnostic, Result};
 use pixel_game_lib::{
     canvas::Canvas,
+    font::Font,
     vek::{Extent2, Vec2},
     window::Input,
 };
@@ -14,6 +17,16 @@ use rodio::{OutputStream, Sink};
 use rodio_wem::WemDecoder;
 
 use crate::ui::playing::PlayingGui;
+
+/// Note game entity.
+pub struct Note {
+    /// Time the note will be triggered in seconds.
+    pub trigger_time_secs: f32,
+    /// Which string the note is on.
+    pub string: u8,
+    /// Which fret the note is on.
+    pub fret: u8,
+}
 
 /// Main game.
 pub struct Game {
@@ -25,15 +38,19 @@ pub struct Game {
     stream: OutputStream,
     /// Position of the player.
     elapsed: Arc<RwLock<(Duration, Instant)>>,
+    /// Position of the player in seconds.
+    elapsed_secs: f32,
     /// How long the song will play.
     total_duration: Duration,
     /// In-game Gui.
     gui: PlayingGui,
+    /// All notes, grouped by the second.
+    notes: HashMap<u32, Vec<Note>>,
 }
 
 impl Game {
     /// Start the game with a song.
-    pub fn new(song: SongFile, window_size: Extent2<f32>) -> Result<Self> {
+    pub fn new(song: SongFile, current_song: usize, window_size: Extent2<f32>) -> Result<Self> {
         // Decode the song
         let decoder = song.music_decoder().into_diagnostic()?;
 
@@ -54,14 +71,37 @@ impl Game {
         // Use the current time as the snapshot
         let elapsed_snapshot = Instant::now();
         let elapsed_previous = Duration::default();
+        let elapsed_secs = 0.0;
+
+        // Parse the notes
+        let notes = song
+            .parse_song_info(current_song)
+            .map_err(|err| miette::miette!("Error parsing song: {err:?}"))?
+            .notes_iter()
+            // Group by time
+            .map(|note| {
+                (
+                    note.time.floor() as u32,
+                    Note {
+                        trigger_time_secs: note.time,
+                        string: note.string,
+                        fret: note.fret,
+                    },
+                )
+            })
+            .into_group_map();
+
+        dbg!(notes.len());
 
         Ok(Self {
             song,
             sink,
             stream,
             elapsed,
+            elapsed_secs,
             total_duration,
             gui,
+            notes,
         })
     }
 
@@ -72,16 +112,42 @@ impl Game {
             let (elapsed, snapshot) = *self.elapsed.read().unwrap();
             elapsed + (Instant::now() - snapshot)
         };
+        self.elapsed_secs = elapsed.as_secs_f32();
 
+        // Update the gui
         self.gui
             .update(elapsed, self.total_duration, input, mouse_pos);
     }
 
     /// Render the game.
     pub fn render(&mut self, canvas: &mut Canvas) {
-        // Reset the canvas
-        canvas.fill(0xFFFFFFFF);
+        const START: f32 = 20.0;
 
+        // Reset the canvas
+        canvas.fill(0xFFDDDDDD);
+
+        // Draw the start line
+        for y in 0..canvas.height() {
+            canvas.set_pixel(Vec2::new(START, y as f32).as_(), 0xFF000000);
+        }
+
+        // Render the notes
+        let font = Font::default();
+        // Take the next couple of seconds so we don't have to loop through all notes
+        for time in (self.elapsed_secs as u32)..(self.elapsed_secs as u32 + 10) {
+            if let Some(notes) = self.notes.get(&time) {
+                // Render all notes in the time bucket
+                for note in notes.iter() {
+                    let note_pos = Vec2::new(
+                        START + (note.trigger_time_secs - self.elapsed_secs) * 200.0,
+                        50.0 + note.string as f32 * 30.0 + note.fret as f32,
+                    );
+                    font.render(&format!("{}", note.fret), note_pos.as_(), canvas);
+                }
+            }
+        }
+
+        // Render the gui
         self.gui.render(canvas);
     }
 }
