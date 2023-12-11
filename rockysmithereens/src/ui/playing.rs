@@ -66,6 +66,9 @@ impl PlayingGui {
         input: &Input,
         mouse_pos: Option<Vec2<usize>>,
     ) {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
         // Update the GUI to fill the screen
         self.gui.update_layout(Vec2::zero(), self.window_size.as_());
 
@@ -82,6 +85,9 @@ impl PlayingGui {
 
     /// Render the Gui.
     pub fn render(&mut self, canvas: &mut Canvas) {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
         // Render the button manually
         let label: &mut Label = self.gui.widget_mut(self.playing_label_node).unwrap();
         label.render(canvas);

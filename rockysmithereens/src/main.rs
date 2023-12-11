@@ -50,7 +50,7 @@ async fn main() -> Result<()> {
 
     // Window configuration with default pixel size and scaling
     let window_config = WindowConfig {
-        buffer_size: Extent2::new(1024, 300),
+        buffer_size: Extent2::new(640, 200),
         ..Default::default()
     };
 

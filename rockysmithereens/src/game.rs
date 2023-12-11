@@ -18,6 +18,9 @@ use rodio_wem::WemDecoder;
 
 use crate::ui::playing::PlayingGui;
 
+/// Position of the line from the left side.
+const START_X: f32 = 20.0;
+
 /// Note game entity.
 pub struct Note {
     /// Time the note will be triggered in seconds.
@@ -26,6 +29,20 @@ pub struct Note {
     pub string: u8,
     /// Which fret the note is on.
     pub fret: u8,
+}
+
+impl Note {
+    /// Draw a note on the screen.
+    pub fn render(&self, elapsed_secs: f32, font: &Font, canvas: &mut Canvas) {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
+        let pos = Vec2::new(
+            START_X + (self.trigger_time_secs - elapsed_secs) * 300.0,
+            50.0 + self.string as f32 * 30.0 + self.fret as f32,
+        );
+        font.render(&format!("{}", self.fret), pos.as_(), canvas);
+    }
 }
 
 /// Main game.
@@ -121,28 +138,34 @@ impl Game {
 
     /// Render the game.
     pub fn render(&mut self, canvas: &mut Canvas) {
-        const START: f32 = 20.0;
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
 
         // Reset the canvas
         canvas.fill(0xFFDDDDDD);
 
         // Draw the start line
-        for y in 0..canvas.height() {
-            canvas.set_pixel(Vec2::new(START, y as f32).as_(), 0xFF000000);
+        {
+            #[cfg(feature = "profiling")]
+            puffin::profile_scope!("render line");
+            for y in 0..canvas.height() {
+                canvas.set_pixel(Vec2::new(START_X, y as f32).as_(), 0xFF000000);
+            }
         }
 
-        // Render the notes
-        let font = Font::default();
-        // Take the next couple of seconds so we don't have to loop through all notes
-        for time in (self.elapsed_secs as u32)..(self.elapsed_secs as u32 + 10) {
-            if let Some(notes) = self.notes.get(&time) {
-                // Render all notes in the time bucket
-                for note in notes.iter() {
-                    let note_pos = Vec2::new(
-                        START + (note.trigger_time_secs - self.elapsed_secs) * 200.0,
-                        50.0 + note.string as f32 * 30.0 + note.fret as f32,
-                    );
-                    font.render(&format!("{}", note.fret), note_pos.as_(), canvas);
+        {
+            #[cfg(feature = "profiling")]
+            puffin::profile_scope!("render notes");
+
+            // Render the notes
+            let font = Font::default();
+            // Take the next couple of seconds so we don't have to loop through all notes
+            for time in (self.elapsed_secs as u32)..(self.elapsed_secs as u32 + 3) {
+                if let Some(notes) = self.notes.get(&time) {
+                    // Render all notes in the time bucket
+                    for note in notes.iter() {
+                        note.render(self.elapsed_secs, &font, canvas);
+                    }
                 }
             }
         }
