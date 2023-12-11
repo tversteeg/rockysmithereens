@@ -70,6 +70,8 @@ pub struct WemDecoder {
     elapsed: Arc<RwLock<(Duration, Instant)>>,
     /// Time added to elapsed, updated every frame, reset every write interval.
     elapsed_frame: f64,
+    /// How long in seconds a single frame takes.
+    sample_time: f64,
 }
 
 impl WemDecoder {
@@ -100,6 +102,9 @@ impl WemDecoder {
         // No time has elapsed yet
         let elapsed = Arc::new(RwLock::new((Duration::default(), Instant::now())));
 
+        // How long each sample takes
+        let sample_time = ((fmt.sample_rate * fmt.channels as u32) as f64).recip();
+
         let mut this = Self {
             fmt,
             previous_window,
@@ -112,6 +117,7 @@ impl WemDecoder {
             current_packet: 0,
             elapsed,
             elapsed_frame: 0.0,
+            sample_time,
         };
 
         // The first read initializes lewton
@@ -139,7 +145,7 @@ impl WemDecoder {
 
         // Calculate the total duration from the total amount of samples
         Ok(Duration::from_secs_f64(
-            samples_total as f64 / self.fmt.sample_rate as f64 / self.fmt.channels as f64,
+            samples_total as f64 * self.sample_time,
         ))
     }
 
@@ -151,28 +157,13 @@ impl WemDecoder {
 
     /// Read a packet.
     fn read_packet(&mut self) -> Result<()> {
+        // Read the new samples from the audio packet
         let audio: InterleavedSamples<_> = lewton::audio::read_audio_packet_generic(
             &self.ident,
             &self.setup,
             &self.packets[self.current_packet].data,
             &mut self.previous_window,
         )?;
-
-        // Update the playing time
-        self.elapsed_frame +=
-            audio.samples.len() as f64 / self.fmt.sample_rate as f64 / audio.channel_count as f64;
-
-        // Update the public facing elapsed time every write interval, this is not done every packet because it's slow
-        if self.elapsed_frame >= ELAPSED_WRITE_INTERVAL {
-            let mut elapsed = self.elapsed.write().unwrap();
-            // Set the elapsed time
-            elapsed.0 += Duration::from_secs_f64(self.elapsed_frame);
-            // Set te snapshot time
-            elapsed.1 = Instant::now();
-
-            // Reset the frame time
-            self.elapsed_frame = 0.0;
-        }
 
         self.current_data = audio.samples.into_iter();
 
@@ -221,14 +212,31 @@ impl Iterator for WemDecoder {
 
     #[inline]
     fn next(&mut self) -> Option<i16> {
+        // Update the public facing elapsed time every write interval, this is not done every packet because it's slow
+        self.elapsed_frame += self.sample_time;
+        if self.elapsed_frame >= ELAPSED_WRITE_INTERVAL {
+            // If we can't get the lock try again next frame
+            if let Ok(mut elapsed) = self.elapsed.try_write() {
+                // Set te snapshot time
+                elapsed.1 = Instant::now();
+                // Set the elapsed time
+                elapsed.0 += Duration::from_secs_f64(self.elapsed_frame);
+
+                // Reset the frame time
+                self.elapsed_frame = 0.0;
+            }
+        }
+
+        // Read the next packet, if applicable
         if self.done {
             None
-        } else if let Some(sample) = self.current_data.next() {
-            Some(sample)
         } else {
-            self.read_packet()
-                .ok()
-                .and_then(|_| self.current_data.next())
+            self.current_data.next().or_else(|| {
+                // Disregard the possible error
+                let _ = self.read_packet();
+
+                self.current_data.next()
+            })
         }
     }
 
