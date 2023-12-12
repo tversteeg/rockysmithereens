@@ -4,6 +4,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use blit::{prelude::Size, Blit, BlitBuffer, BlitOptions};
 use itertools::Itertools;
 use miette::{IntoDiagnostic, Result};
 use pixel_game_lib::{
@@ -63,6 +64,10 @@ pub struct Game {
     gui: PlayingGui,
     /// All notes, grouped by the second.
     notes: HashMap<u32, Vec<Note>>,
+    /// Background image.
+    ///
+    /// Cached for quick redrawing.
+    background: BlitBuffer,
 }
 
 impl Game {
@@ -108,7 +113,19 @@ impl Game {
             })
             .into_group_map();
 
-        dbg!(notes.len());
+        // Setup the background
+        let mut background = BlitBuffer::from_buffer(
+            &vec![0xFFDDDDDD; window_size.as_().product()],
+            window_size.w,
+            127,
+        );
+        let background_size = background.size();
+
+        // Draw the start line
+        for y in 0..background_size.height {
+            background.pixels_mut()[START_X as usize + (y * background_size.width) as usize] =
+                0xFF000000;
+        }
 
         Ok(Self {
             song,
@@ -119,6 +136,7 @@ impl Game {
             total_duration,
             gui,
             notes,
+            background,
         })
     }
 
@@ -142,16 +160,11 @@ impl Game {
         puffin::profile_function!();
 
         // Reset the canvas
-        canvas.fill(0xFFDDDDDD);
-
-        // Draw the start line
-        {
-            #[cfg(feature = "profiling")]
-            puffin::profile_scope!("render line");
-            for y in 0..canvas.height() {
-                canvas.set_pixel(Vec2::new(START_X, y as f32).as_(), 0xFF000000);
-            }
-        }
+        self.background.blit(
+            canvas.raw_buffer(),
+            self.background.size(),
+            &BlitOptions::default(),
+        );
 
         {
             #[cfg(feature = "profiling")]

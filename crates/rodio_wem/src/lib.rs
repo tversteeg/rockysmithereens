@@ -41,7 +41,7 @@ use crate::{
 /// Interval in seconds at which the elapsed data will be written.
 ///
 /// Lower numbers means more accurate timing but also less performance.
-const ELAPSED_WRITE_INTERVAL: f64 = 0.5;
+const ELAPSED_WRITE_INTERVAL: f64 = 1.0;
 
 /// Decoder for an Wem file.
 #[derive(Clone)]
