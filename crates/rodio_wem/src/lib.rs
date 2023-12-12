@@ -212,32 +212,35 @@ impl Iterator for WemDecoder {
 
     #[inline]
     fn next(&mut self) -> Option<i16> {
-        // Update the public facing elapsed time every write interval, this is not done every packet because it's slow
-        self.elapsed_frame += self.sample_time;
-        if self.elapsed_frame >= ELAPSED_WRITE_INTERVAL {
-            // If we can't get the lock try again next frame
-            if let Ok(mut elapsed) = self.elapsed.try_write() {
-                // Set te snapshot time
-                elapsed.1 = Instant::now();
-                // Set the elapsed time
-                elapsed.0 += Duration::from_secs_f64(self.elapsed_frame);
-
-                // Reset the frame time
-                self.elapsed_frame = 0.0;
-            }
-        }
-
         // Read the next packet, if applicable
-        if self.done {
-            None
-        } else {
-            self.current_data.next().or_else(|| {
-                // Disregard the possible error
-                let _ = self.read_packet();
+        self.current_data.next().or_else(|| {
+            // Current data frame ended, do the extra checks
 
-                self.current_data.next()
-            })
-        }
+            // Update the public facing elapsed time every write interval, this is not done every packet because it's slow
+            self.elapsed_frame += self.sample_time;
+            if self.elapsed_frame >= ELAPSED_WRITE_INTERVAL {
+                // If we can't get the lock try again next frame
+                if let Ok(mut elapsed) = self.elapsed.try_write() {
+                    // Set te snapshot time
+                    elapsed.1 = Instant::now();
+                    // Set the elapsed time
+                    elapsed.0 += Duration::from_secs_f64(self.elapsed_frame);
+
+                    // Reset the frame time
+                    self.elapsed_frame = 0.0;
+                }
+            }
+
+            if self.done {
+                return None;
+            }
+
+            // Disregard the possible error
+            let _ = self.read_packet();
+
+            // Next packet should be available
+            self.current_data.next()
+        })
     }
 
     #[inline]
