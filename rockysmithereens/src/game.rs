@@ -4,7 +4,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use blit::{prelude::Size, Blit, BlitBuffer, BlitOptions};
+use blit::{Blit, BlitBuffer, BlitOptions};
 use itertools::Itertools;
 use miette::{IntoDiagnostic, Result};
 use pixel_game_lib::{
@@ -15,7 +15,6 @@ use pixel_game_lib::{
 };
 use rockysmithereens_parser::SongFile;
 use rodio::{OutputStream, Sink};
-use rodio_wem::WemDecoder;
 
 use crate::ui::playing::PlayingGui;
 
@@ -91,8 +90,6 @@ impl Game {
         let gui = PlayingGui::new(window_size);
 
         // Use the current time as the snapshot
-        let elapsed_snapshot = Instant::now();
-        let elapsed_previous = Duration::default();
         let elapsed_secs = 0.0;
 
         // Parse the notes

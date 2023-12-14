@@ -2,7 +2,6 @@ use pixel_game_lib::{
     canvas::Canvas,
     gui::{
         button::{Button, ButtonRef},
-        label::{Label, LabelRef},
         Gui, GuiBuilder, Widget,
     },
     vek::{Extent2, Vec2},

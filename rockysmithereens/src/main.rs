@@ -1,25 +1,17 @@
 mod game;
 mod ui;
 
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc, Mutex, RwLock,
-};
+use std::sync::{Arc, RwLock};
 
 use game::Game;
 use miette::Result;
 use pixel_game_lib::{
-    gui::{
-        button::{Button, ButtonRef},
-        label::{Label, LabelRef},
-        Gui, GuiBuilder, Widget,
-    },
-    vek::{Extent2, Vec2},
+    vek::Extent2,
     window::{KeyCode, WindowConfig},
 };
 use rfd::AsyncFileDialog;
 use rockysmithereens_parser::SongFile;
-use taffy::{prelude::Size, style::Style};
+
 use ui::home::HomescreenGui;
 
 /// Which screen we are currently on.

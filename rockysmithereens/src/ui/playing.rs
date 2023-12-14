@@ -3,7 +3,6 @@ use std::time::Duration;
 use pixel_game_lib::{
     canvas::Canvas,
     gui::{
-        button::{Button, ButtonRef},
         label::{Label, LabelRef},
         Gui, GuiBuilder, Widget,
     },
@@ -63,8 +62,8 @@ impl PlayingGui {
         &mut self,
         time_elapsed: Duration,
         total_duration: Duration,
-        input: &Input,
-        mouse_pos: Option<Vec2<usize>>,
+        _input: &Input,
+        _mouse_pos: Option<Vec2<usize>>,
     ) {
         #[cfg(feature = "profiling")]
         puffin::profile_function!();
