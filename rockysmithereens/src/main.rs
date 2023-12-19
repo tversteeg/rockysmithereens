@@ -1,33 +1,41 @@
 mod game;
 mod ui;
 
-use std::sync::{Arc, RwLock};
+use std::{
+    io::Stdout,
+    sync::{Arc, RwLock},
+    time::Duration,
+};
 
+use crossterm::{
+    event::{Event, KeyCode},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
+};
 use game::Game;
-use miette::Result;
-use pixel_game_lib::{
-    vek::Extent2,
-    window::{KeyCode, WindowConfig},
+use miette::{Context, IntoDiagnostic, Result};
+use ratatui::{
+    prelude::{Alignment, Constraint, CrosstermBackend, Direction, Layout, Rect},
+    style::{Modifier, Style},
+    text::Text,
+    widgets::{
+        block::{Position, Title},
+        Block, Borders, List, ListItem, ListState, Paragraph,
+    },
+    Frame, Terminal,
 };
 use rfd::AsyncFileDialog;
 use rockysmithereens_parser::SongFile;
+use ui::{
+    filetree::{FileTree, FileTreeState},
+    list::StatefulList,
+};
 
-use ui::home::HomescreenGui;
-
-/// Which screen we are currently on.
-pub enum Phase {
-    /// Gui for the homescreen.
-    Homescreen(HomescreenGui),
-    /// Gui for playing.
-    Game(Game),
-}
-
-/// Game state passed around the update and render functions.
-pub struct State {
-    /// Current screen.
-    screen: Phase,
-    /// Bytes for the file.
-    loaded_song: Arc<RwLock<Option<SongFile>>>,
+/// Application state.
+pub struct App {
+    /// List for the main menu items.
+    main_menu_list_state: StatefulList,
+    /// Select the song state.
+    select_song_state: FileTreeState,
 }
 
 /// Open an empty window.
@@ -40,20 +48,8 @@ async fn main() -> Result<()> {
     #[cfg(feature = "profiling")]
     puffin::set_scopes_on(true);
 
-    // Window configuration with default pixel size and scaling
-    let window_config = WindowConfig {
-        buffer_size: Extent2::new(640, 200),
-        ..Default::default()
-    };
-
     // The file to open, can be set from all threads
-    let loaded_song = Arc::new(RwLock::new(None));
-
-    // Create the shareable game state
-    let state = State {
-        screen: Phase::Homescreen(HomescreenGui::new(window_config.buffer_size.as_())),
-        loaded_song: loaded_song.clone(),
-    };
+    let loaded_song: Arc<RwLock<Option<SongFile>>> = Arc::new(RwLock::new(None));
 
     // Open a new thread waiting for the file dialog to be activated
     let (open_file_tx, open_file_rx) = tokio::sync::watch::channel(());
@@ -74,7 +70,7 @@ async fn main() -> Result<()> {
                 .await
             {
                 // Read the bytes from the file
-                let bytes = file.read().await;
+                let bytes: Vec<u8> = file.read().await;
 
                 // Parse the bytes into the song
                 // TODO: report error
@@ -88,56 +84,169 @@ async fn main() -> Result<()> {
         }
     });
 
-    // Open the window and start the game-loop
-    pixel_game_lib::window(
-        state,
-        window_config.clone(),
-        // Update loop exposing input events we can handle, this is where you would handle the game logic
-        move |state, input, mouse_pos, _dt| {
-            #[cfg(feature = "profiling")]
-            puffin::GlobalProfiler::lock().new_frame();
+    // Main menu selection
+    let main_menu_list_state = StatefulList::with_items(&["Open File", "Quit"]);
+    let select_song_state = FileTreeState::from_current_dir()?;
+    let mut app = App {
+        main_menu_list_state,
+        select_song_state,
+    };
 
-            #[cfg(feature = "profiling")]
-            puffin::profile_scope!("update");
+    // Create the UI in the terminal
+    let mut terminal = setup_terminal().wrap_err("Error setting up terminal")?;
 
-            match &mut state.screen {
-                Phase::Homescreen(homescreen) => {
-                    if homescreen.update(input, mouse_pos) {
-                        // Release the lock for the blocking async thread
-                        open_file_tx.send(()).expect("Readers dropped");
+    // Main UI loop
+    loop {
+        #[cfg(feature = "profiling")]
+        puffin::GlobalProfiler::lock().new_frame();
+
+        #[cfg(feature = "profiling")]
+        puffin::profile_scope!("tick");
+
+        // Draw a frame
+        terminal
+            .draw(|frame| {
+                ui(frame, &mut app);
+            })
+            .into_diagnostic()
+            .wrap_err("Error drawing frame")?;
+
+        // Handle events
+        if crossterm::event::poll(Duration::from_millis(250))
+            .into_diagnostic()
+            .wrap_err("event poll failed")?
+        {
+            if let Event::Key(key) = crossterm::event::read()
+                .into_diagnostic()
+                .wrap_err("event read failed")?
+            {
+                if key.code == KeyCode::Char('q') {
+                    // Stop the loop
+                    break;
+                } else {
+                    // Update the state
+                    match app.main_menu_list_state.update(&key).as_deref() {
+                        Some("Quit") => break,
+                        _ => (),
                     }
-
-                    // Switch the screen when a song is loaded
-                    if let Some(song) = state.loaded_song.read().unwrap().as_ref() {
-                        state.screen = Phase::Game(
-                            Game::new(song.clone(), 0, window_config.buffer_size.as_())
-                                .expect("Failed loading song"),
-                        );
-                    }
-                }
-                Phase::Game(game) => {
-                    game.update(input, mouse_pos);
                 }
             }
+        }
+    }
 
-            // Exit when escape is pressed
-            input.key_pressed(KeyCode::Escape)
-        },
-        // Render loop exposing the pixel buffer we can mutate
-        move |state, canvas, _dt| {
-            #[cfg(feature = "profiling")]
-            puffin::profile_scope!("render");
-
-            match &mut state.screen {
-                Phase::Homescreen(homescreen) => {
-                    homescreen.render(canvas);
-                }
-                Phase::Game(game) => {
-                    game.render(canvas);
-                }
-            }
-        },
-    )?;
+    // Undo all changes to the terminal
+    restore_terminal(&mut terminal).wrap_err("Error restoring terminal")?;
 
     Ok(())
+}
+
+/// Render the UI.
+fn ui(frame: &mut Frame, app: &mut App) {
+    // Draw the title
+    let title = Block::new()
+        .title(Title::from("Rockysmithereens").alignment(Alignment::Center))
+        .title(Title::from(env!("CARGO_PKG_VERSION")).alignment(Alignment::Center))
+        .title(
+            Title::from("press 'q' to quit")
+                .alignment(Alignment::Center)
+                .position(Position::Bottom),
+        )
+        .borders(Borders::TOP | Borders::BOTTOM);
+
+    // Layout inside the title block
+    let main_layout = title.inner(frame.size());
+
+    frame.render_widget(title, frame.size());
+
+    // Draw the file selection
+    let song_select_file_tree = FileTree::new();
+    frame.render_stateful_widget(
+        song_select_file_tree,
+        main_layout,
+        &mut app.select_song_state,
+    );
+
+    /*
+    // Draw the main menu
+    let list_items = app
+        .main_menu_list_state
+        .items
+        .iter()
+        .map(|item| ListItem::new(item.clone()))
+        .collect::<Vec<_>>();
+    let main_menu_list = List::new(list_items)
+        .block(
+            Block::default()
+                .title("Main Menu")
+                .title_alignment(Alignment::Center)
+                .borders(Borders::ALL),
+        )
+        .highlight_style(Style::new().add_modifier(Modifier::REVERSED))
+        .highlight_symbol(">> ");
+    frame.render_stateful_widget(
+        main_menu_list,
+        centered_rect(main_layout, 50, 50),
+        &mut app.main_menu_list_state.state,
+    );
+    */
+}
+
+/// Setup a ratatui terminal.
+fn setup_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>> {
+    let mut stdout = std::io::stdout();
+
+    crossterm::terminal::enable_raw_mode()
+        .into_diagnostic()
+        .wrap_err("Error enabling raw mode")?;
+
+    crossterm::execute!(stdout, EnterAlternateScreen)
+        .into_diagnostic()
+        .wrap_err("unable to enter alternate screen")?;
+
+    Terminal::new(CrosstermBackend::new(stdout))
+        .into_diagnostic()
+        .wrap_err("Error creating terminal")
+}
+
+/// Restorte the terminal to it's original state
+fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
+    crossterm::terminal::disable_raw_mode()
+        .into_diagnostic()
+        .wrap_err("Error disabling raw mode")?;
+
+    crossterm::execute!(terminal.backend_mut(), LeaveAlternateScreen)
+        .into_diagnostic()
+        .wrap_err("Error switching back to main screen")?;
+
+    terminal
+        .show_cursor()
+        .into_diagnostic()
+        .wrap_err("Error showing cursor")
+}
+
+/// Center a layout rectangle.
+///
+/// # Usage
+///
+/// ```rust
+/// let rect = centered_rect(f.size(), 50, 50);
+/// ```
+fn centered_rect(r: Rect, percent_x: u16, percent_y: u16) -> Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((100 - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((100 - percent_y) / 2),
+        ])
+        .split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ])
+        .split(popup_layout[1])[1]
 }
