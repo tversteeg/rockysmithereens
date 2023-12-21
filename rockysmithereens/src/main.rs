@@ -3,7 +3,10 @@ mod ui;
 
 use std::{
     io::Stdout,
-    sync::{Arc, RwLock},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc, RwLock,
+    },
     time::Duration,
 };
 
@@ -25,6 +28,7 @@ use ratatui::{
 };
 use rfd::AsyncFileDialog;
 use rockysmithereens_parser::SongFile;
+use tokio::signal::unix::SignalKind;
 use ui::{
     filetree::{FileTree, FileTreeState},
     list::StatefulList,
@@ -202,6 +206,40 @@ fn setup_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>> {
     crossterm::execute!(stdout, EnterAlternateScreen)
         .into_diagnostic()
         .wrap_err("unable to enter alternate screen")?;
+
+    // Attach a panic hook to reset the terminal on Rust panics
+    let original_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |panic| {
+        // First create a terminal for the hook, so it can be restored
+        let mut terminal_for_hook =
+            Terminal::new(CrosstermBackend::new(std::io::stdout())).unwrap();
+
+        // Reset the terminal to it's original state
+        restore_terminal(&mut terminal_for_hook).expect("Error restoring terminal");
+
+        // Call the original panic hook again so the panics don't get lost
+        original_hook(panic);
+    }));
+
+    // Handle signals to reset the terminal
+    let mut sigint = tokio::signal::unix::signal(SignalKind::interrupt()).into_diagnostic()?;
+    let mut sigquit = tokio::signal::unix::signal(SignalKind::quit()).into_diagnostic()?;
+    tokio::spawn(async move {
+        let signal = tokio::select! {
+            _ = sigint.recv() => 1,
+            _ = sigquit.recv() => 2,
+        };
+
+        // First create a terminal for the hook, so it can be restored
+        let mut terminal_for_hook =
+            Terminal::new(CrosstermBackend::new(std::io::stdout())).unwrap();
+
+        // Reset the terminal to it's original state
+        restore_terminal(&mut terminal_for_hook).expect("Error restoring terminal");
+
+        // Kill the process with the signal
+        std::process::exit(signal);
+    });
 
     Terminal::new(CrosstermBackend::new(stdout))
         .into_diagnostic()
