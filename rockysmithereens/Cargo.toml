@@ -21,6 +21,7 @@ itertools = "0.12"
 ratatui = "0.25"
 crossterm = "0.27"
 vek = "0.16"
+camino = "1"
 
 puffin = { version = "0.18", optional = true }
 puffin_http = { version = "0.15", optional = true }

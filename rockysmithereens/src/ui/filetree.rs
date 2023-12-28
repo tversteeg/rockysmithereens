@@ -1,5 +1,4 @@
-use std::path::PathBuf;
-
+use camino::Utf8PathBuf;
 use miette::{Context, IntoDiagnostic, Result};
 use ratatui::{
     prelude::{Buffer, Rect},
@@ -12,7 +11,7 @@ use ratatui::{
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct FileTreeState {
     /// Current opened folder.
-    current: PathBuf,
+    current: Utf8PathBuf,
     /// Folders in directory.
     dirs: Vec<String>,
     /// Files in directory.
@@ -22,9 +21,12 @@ pub struct FileTreeState {
 impl FileTreeState {
     /// Create the state from the current working directory.
     pub fn from_current_dir() -> Result<Self> {
-        let current = std::env::current_dir()
-            .into_diagnostic()
-            .wrap_err("Error getting current directory for filetree widget")?;
+        let current = Utf8PathBuf::from_path_buf(
+            std::env::current_dir()
+                .into_diagnostic()
+                .wrap_err("Error getting current directory for filetree widget")?,
+        )
+        .map_err(|path| miette::miette!("Path '{path:?}' is not valid UTF-8"))?;
         let dirs = Vec::new();
         let files = Vec::new();
 
@@ -53,17 +55,18 @@ impl FileTreeState {
             .wrap_err_with(|| {
                 format!(
                     "Error reading current directory '{}' for filetree widget",
-                    self.current.display()
+                    self.current
                 )
             })?
         {
             let dir_entry = res.into_diagnostic()?;
-            let path = dir_entry.path();
+            let path = Utf8PathBuf::from_path_buf(dir_entry.path())
+                .map_err(|path| miette::miette!("Path '{path:?}' is not valid UTF-8"))?;
             if let Some(file_name) = path.file_name() {
                 if path.is_dir() {
-                    self.dirs.push(file_name.to_string_lossy().to_string());
+                    self.dirs.push(file_name.to_string());
                 } else {
-                    self.files.push(file_name.to_string_lossy().to_string());
+                    self.files.push(file_name.to_string());
                 }
             }
         }
