@@ -129,10 +129,15 @@ async fn main() -> Result<()> {
                     break;
                 } else {
                     // Update the state
+                    /*
                     match app.main_menu_list_state.update(&key).as_deref() {
                         Some("Quit") => break,
                         _ => (),
                     }
+                    */
+
+                    // Update the state
+                    app.select_song_state.update(&key)?;
                 }
             }
         }

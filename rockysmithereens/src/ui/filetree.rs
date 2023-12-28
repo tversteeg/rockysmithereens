@@ -1,4 +1,5 @@
 use camino::Utf8PathBuf;
+use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 use miette::{Context, IntoDiagnostic, Result};
 use ratatui::{
     prelude::{Buffer, Rect},
@@ -11,7 +12,9 @@ use ratatui::{
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct FileTreeState {
     /// Current opened folder.
-    current: Utf8PathBuf,
+    current_dir: Utf8PathBuf,
+    /// Currently highlighted item.
+    current: usize,
     /// Folders in directory.
     dirs: Vec<String>,
     /// Files in directory.
@@ -21,7 +24,7 @@ pub struct FileTreeState {
 impl FileTreeState {
     /// Create the state from the current working directory.
     pub fn from_current_dir() -> Result<Self> {
-        let current = Utf8PathBuf::from_path_buf(
+        let current_dir = Utf8PathBuf::from_path_buf(
             std::env::current_dir()
                 .into_diagnostic()
                 .wrap_err("Error getting current directory for filetree widget")?,
@@ -29,11 +32,13 @@ impl FileTreeState {
         .map_err(|path| miette::miette!("Path '{path:?}' is not valid UTF-8"))?;
         let dirs = Vec::new();
         let files = Vec::new();
+        let current = 0;
 
         let mut this = Self {
-            current,
+            current_dir,
             dirs,
             files,
+            current,
         };
 
         // Read the directory
@@ -42,26 +47,57 @@ impl FileTreeState {
         Ok(this)
     }
 
+    /// Handle the key for selecting the items.
+    pub fn update(&mut self, key: &KeyEvent) -> Result<()> {
+        if key.kind == KeyEventKind::Press {
+            match key.code {
+                KeyCode::Left | KeyCode::Char('h') => self.up(),
+                KeyCode::Down | KeyCode::Char('j') => self.next(),
+                KeyCode::Up | KeyCode::Char('k') => self.previous(),
+                KeyCode::Right | KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Char('l') => {
+                    self.select_or_enter()
+                }
+                _ => Ok(()),
+            }?;
+        }
+
+        Ok(())
+    }
+
+    /// Get the selected file or directory.
+    pub fn selected(&self) -> Utf8PathBuf {
+        if self.current < self.dirs.len() {
+            // A directory is selected
+            self.current_dir.join(&self.dirs[self.current])
+        } else {
+            // A file is selected
+            self.current_dir
+                .join(&self.files[self.current - self.dirs.len()])
+        }
+    }
+
     /// Fill the folders and files from the current directory.
     fn read_current_dir(&mut self) -> Result<()> {
         // Reset the old files and dirs
         self.files.clear();
         self.dirs.clear();
         self.dirs.push("..".to_string());
+        self.current = 0;
 
         // Fill the files and dirs
-        for res in std::fs::read_dir(&self.current)
+        for res in self
+            .current_dir
+            .read_dir_utf8()
             .into_diagnostic()
             .wrap_err_with(|| {
                 format!(
                     "Error reading current directory '{}' for filetree widget",
-                    self.current
+                    self.current_dir
                 )
             })?
         {
             let dir_entry = res.into_diagnostic()?;
-            let path = Utf8PathBuf::from_path_buf(dir_entry.path())
-                .map_err(|path| miette::miette!("Path '{path:?}' is not valid UTF-8"))?;
+            let path = dir_entry.path();
             if let Some(file_name) = path.file_name() {
                 if path.is_dir() {
                     self.dirs.push(file_name.to_string());
@@ -74,6 +110,59 @@ impl FileTreeState {
         // Sort both by name
         self.files.sort();
         self.dirs.sort();
+
+        Ok(())
+    }
+
+    /// Go up a directory if possible.
+    fn up(&mut self) -> Result<()> {
+        if let Some(higher) = self.current_dir.parent() {
+            self.current_dir = higher.to_path_buf();
+
+            self.read_current_dir()?;
+        }
+
+        Ok(())
+    }
+
+    /// Move the cursor down.
+    ///
+    /// Wraps around at the bottom.
+    fn next(&mut self) -> Result<()> {
+        if self.current == self.files.len() + self.dirs.len() - 1 {
+            self.current = 0;
+        } else {
+            self.current += 1;
+        }
+
+        Ok(())
+    }
+
+    /// Move the cursor up.
+    ///
+    /// Wraps around at the top.
+    fn previous(&mut self) -> Result<()> {
+        if self.current == 0 {
+            self.current = self.files.len() + self.dirs.len() - 1;
+        } else {
+            self.current -= 1;
+        }
+
+        Ok(())
+    }
+
+    /// Select the file or enter the directory.
+    fn select_or_enter(&mut self) -> Result<()> {
+        // Current is a directory
+        if self.current < self.dirs.len() {
+            // Go to the directory
+            self.current_dir = self.selected();
+
+            self.read_current_dir()?;
+        } else {
+            // Select the file
+            todo!()
+        }
 
         Ok(())
     }
@@ -103,10 +192,12 @@ impl<'a> FileTree<'a> {
     pub fn new() -> Self {
         let block = None;
         let dir_style = Style::default().add_modifier(Modifier::BOLD);
+        let highlight_style = Style::default().add_modifier(Modifier::REVERSED);
 
         Self {
             block,
             dir_style,
+            highlight_style,
             ..Default::default()
         }
     }
@@ -142,7 +233,11 @@ impl<'a> StatefulWidget for FileTree<'a> {
                 list_area.top().saturating_add(j as u16),
                 dir,
                 list_area.width as usize,
-                self.dir_style,
+                if state.current == j {
+                    self.highlight_style
+                } else {
+                    self.dir_style
+                },
             );
         }
 
@@ -155,7 +250,11 @@ impl<'a> StatefulWidget for FileTree<'a> {
                     .saturating_add((j + state.dirs.len()) as u16),
                 file,
                 list_area.width as usize,
-                self.file_style,
+                if state.current == j + state.dirs.len() {
+                    self.highlight_style
+                } else {
+                    self.file_style
+                },
             );
         }
     }
