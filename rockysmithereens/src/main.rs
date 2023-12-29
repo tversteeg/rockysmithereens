@@ -11,7 +11,7 @@ use std::{
 };
 
 use crossterm::{
-    event::{Event, KeyCode},
+    event::{Event, KeyCode, KeyEvent},
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
 use game::Game;
@@ -35,11 +35,111 @@ use ui::{
 };
 
 /// Application state.
-pub struct App {
-    /// List for the main menu items.
-    main_menu_list_state: StatefulList,
-    /// Select the song state.
-    select_song_state: FileTreeState,
+pub enum App {
+    MainMenu {
+        /// List for the main menu items.
+        main_menu_list_state: StatefulList,
+    },
+    SelectSong {
+        /// Select the song state.
+        select_song_state: FileTreeState,
+    },
+}
+
+impl App {
+    /// Start a new application.
+    pub fn new() -> Self {
+        Self::main_menu()
+    }
+
+    /// Switch to the main menu state.
+    pub fn main_menu() -> Self {
+        let main_menu_list_state = StatefulList::with_items(&["Open File", "Quit"]);
+
+        Self::MainMenu {
+            main_menu_list_state,
+        }
+    }
+
+    /// Switch to the select song state.
+    pub fn select_song() -> Result<Self> {
+        let select_song_state = FileTreeState::from_current_dir()?;
+
+        Ok(Self::SelectSong { select_song_state })
+    }
+
+    /// Render the current phase.
+    pub fn render(&mut self, frame: &mut Frame) {
+        // Draw the title
+        let title = Block::new()
+            .title(Title::from("Rockysmithereens").alignment(Alignment::Center))
+            .title(Title::from(env!("CARGO_PKG_VERSION")).alignment(Alignment::Center))
+            .title(
+                Title::from("press 'q' to quit")
+                    .alignment(Alignment::Center)
+                    .position(Position::Bottom),
+            )
+            .borders(Borders::TOP | Borders::BOTTOM);
+
+        // Layout inside the title block
+        let main_layout = title.inner(frame.size());
+
+        frame.render_widget(title, frame.size());
+
+        // Render based on which phase we are in
+        match self {
+            App::MainMenu {
+                main_menu_list_state,
+            } => {
+                // Draw the main menu
+                let list_items = main_menu_list_state
+                    .items
+                    .iter()
+                    .map(|item| ListItem::new(item.clone()))
+                    .collect::<Vec<_>>();
+                let main_menu_list = List::new(list_items)
+                    .block(
+                        Block::default()
+                            .title("Main Menu")
+                            .title_alignment(Alignment::Center)
+                            .borders(Borders::ALL),
+                    )
+                    .highlight_style(Style::new().add_modifier(Modifier::REVERSED))
+                    .highlight_symbol(">> ");
+                frame.render_stateful_widget(
+                    main_menu_list,
+                    centered_rect(main_layout, 50, 50),
+                    &mut main_menu_list_state.state,
+                );
+            }
+            App::SelectSong { select_song_state } => {
+                // Draw the file selection
+                let song_select_file_tree = FileTree::new();
+                frame.render_stateful_widget(song_select_file_tree, main_layout, select_song_state);
+            }
+        }
+    }
+
+    /// Handle key events.
+    fn handle_key(&mut self, key: &KeyEvent) -> Result<bool> {
+        match self {
+            App::MainMenu {
+                main_menu_list_state,
+            } => match main_menu_list_state.update(&key).as_deref() {
+                Some("Open File") => {
+                    *self = Self::select_song()?;
+                }
+                Some("Quit") => return Ok(false),
+                Some(other) => panic!("Unhandled menu event '{other}'"),
+                None => {}
+            },
+            App::SelectSong { select_song_state } => {
+                select_song_state.update(&key)?;
+            }
+        }
+
+        Ok(true)
+    }
 }
 
 /// Open an empty window.
@@ -89,12 +189,7 @@ async fn main() -> Result<()> {
     });
 
     // Main menu selection
-    let main_menu_list_state = StatefulList::with_items(&["Open File", "Quit"]);
-    let select_song_state = FileTreeState::from_current_dir()?;
-    let mut app = App {
-        main_menu_list_state,
-        select_song_state,
-    };
+    let mut app = App::new();
 
     // Create the UI in the terminal
     let mut terminal = setup_terminal().wrap_err("Error setting up terminal")?;
@@ -110,7 +205,7 @@ async fn main() -> Result<()> {
         // Draw a frame
         terminal
             .draw(|frame| {
-                ui(frame, &mut app);
+                app.render(frame);
             })
             .into_diagnostic()
             .wrap_err("Error drawing frame")?;
@@ -128,16 +223,10 @@ async fn main() -> Result<()> {
                     // Stop the loop
                     break;
                 } else {
-                    // Update the state
-                    /*
-                    match app.main_menu_list_state.update(&key).as_deref() {
-                        Some("Quit") => break,
-                        _ => (),
+                    // Update the app state with the key
+                    if !app.handle_key(&key)? {
+                        break;
                     }
-                    */
-
-                    // Update the state
-                    app.select_song_state.update(&key)?;
                 }
             }
         }
@@ -147,57 +236,6 @@ async fn main() -> Result<()> {
     restore_terminal(&mut terminal).wrap_err("Error restoring terminal")?;
 
     Ok(())
-}
-
-/// Render the UI.
-fn ui(frame: &mut Frame, app: &mut App) {
-    // Draw the title
-    let title = Block::new()
-        .title(Title::from("Rockysmithereens").alignment(Alignment::Center))
-        .title(Title::from(env!("CARGO_PKG_VERSION")).alignment(Alignment::Center))
-        .title(
-            Title::from("press 'q' to quit")
-                .alignment(Alignment::Center)
-                .position(Position::Bottom),
-        )
-        .borders(Borders::TOP | Borders::BOTTOM);
-
-    // Layout inside the title block
-    let main_layout = title.inner(frame.size());
-
-    frame.render_widget(title, frame.size());
-
-    // Draw the file selection
-    let song_select_file_tree = FileTree::new();
-    frame.render_stateful_widget(
-        song_select_file_tree,
-        main_layout,
-        &mut app.select_song_state,
-    );
-
-    /*
-    // Draw the main menu
-    let list_items = app
-        .main_menu_list_state
-        .items
-        .iter()
-        .map(|item| ListItem::new(item.clone()))
-        .collect::<Vec<_>>();
-    let main_menu_list = List::new(list_items)
-        .block(
-            Block::default()
-                .title("Main Menu")
-                .title_alignment(Alignment::Center)
-                .borders(Borders::ALL),
-        )
-        .highlight_style(Style::new().add_modifier(Modifier::REVERSED))
-        .highlight_symbol(">> ");
-    frame.render_stateful_widget(
-        main_menu_list,
-        centered_rect(main_layout, 50, 50),
-        &mut app.main_menu_list_state.state,
-    );
-    */
 }
 
 /// Setup a ratatui terminal.

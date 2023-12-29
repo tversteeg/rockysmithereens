@@ -48,20 +48,20 @@ impl FileTreeState {
     }
 
     /// Handle the key for selecting the items.
-    pub fn update(&mut self, key: &KeyEvent) -> Result<()> {
+    pub fn update(&mut self, key: &KeyEvent) -> Result<Option<Utf8PathBuf>> {
         if key.kind == KeyEventKind::Press {
             match key.code {
                 KeyCode::Left | KeyCode::Char('h') => self.up(),
                 KeyCode::Down | KeyCode::Char('j') => self.next(),
                 KeyCode::Up | KeyCode::Char('k') => self.previous(),
                 KeyCode::Right | KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Char('l') => {
-                    self.select_or_enter()
+                    return self.select_or_enter();
                 }
                 _ => Ok(()),
             }?;
         }
 
-        Ok(())
+        Ok(None)
     }
 
     /// Get the selected file or directory.
@@ -152,19 +152,19 @@ impl FileTreeState {
     }
 
     /// Select the file or enter the directory.
-    fn select_or_enter(&mut self) -> Result<()> {
+    fn select_or_enter(&mut self) -> Result<Option<Utf8PathBuf>> {
         // Current is a directory
         if self.current < self.dirs.len() {
             // Go to the directory
             self.current_dir = self.selected();
 
             self.read_current_dir()?;
+
+            Ok(None)
         } else {
             // Select the file
-            todo!()
+            Ok(Some(self.selected()))
         }
-
-        Ok(())
     }
 }
 
