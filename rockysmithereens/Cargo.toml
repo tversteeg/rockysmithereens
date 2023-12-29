@@ -4,23 +4,24 @@ version = "0.1.0"
 edition = "2021"
 default-run = "rockysmithereens"
 
-[dependencies]
-rodio_wem = { path = "../crates/rodio_wem", features = ["profile-with-tracing"] }
-rockysmithereens_parser = { path = "../crates/rockysmithereens_parser", features = ["profile-with-tracing"] }
-anyhow = "1.0.62"
-bevy = { version = "0.8.1", features = ["dds"] }
-bevy_egui = "0.16.0"
-clap = { version = "3.2.17", features = ["derive"] }
-rfd = "0.10.0"
-lazy_static = "1.4.0"
-rodio = { version = "0.15.0", default-features = false }
-profiling = "1.0.6"
-bevy_puffin = { version = "0.2.0", optional = true }
-puffin_egui = { version = "0.16.0", optional = true }
-
 [features]
-profile = ["profiling/profile-with-tracing", "bevy_puffin", "puffin_egui"]
+default = []
+profiling = ["dep:puffin", "dep:puffin_http", "rodio_wem/profiling", "rockysmithereens_parser/profiling"]
 
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-tracing-wasm = "0.2.1"
-console_error_panic_hook = "0.1.7"
+[dependencies]
+rodio_wem = { path = "../crates/rodio_wem" }
+rockysmithereens_parser = { path = "../crates/rockysmithereens_parser" }
+
+rodio.workspace = true
+miette.workspace = true
+
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "signal"] }
+rfd = "0.12"
+itertools = "0.12"
+ratatui = "0.25"
+crossterm = "0.27"
+vek = "0.16"
+camino = "1"
+
+puffin = { version = "0.18", optional = true }
+puffin_http = { version = "0.15", optional = true }

@@ -17,8 +17,10 @@ pub struct CodebookLibrary<'a> {
 
 impl<'a> CodebookLibrary<'a> {
     /// Create the library from a binary.
-    #[profiling::function]
     pub fn from_bytes(bytes: &'a [u8]) -> Result<Self> {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
         // Get the last 4 bytes of the stream as the offset for the list of offsets
         let (_, offsets_offset) =
             context("codebook offsets offset", le_u32)(&bytes[(bytes.len() - 4)..])?;
@@ -41,8 +43,10 @@ impl<'a> CodebookLibrary<'a> {
     }
 
     /// Rebuild the vorbis header input codebook.
-    #[profiling::function]
     pub fn rebuild(&self, codebook_index: usize) -> Result<BitVec<u8, Lsb0>> {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
         // Get the codebook data belonging to the index
         let codebook_data = self.codebook(codebook_index)?;
 
@@ -150,8 +154,10 @@ impl<'a> CodebookLibrary<'a> {
     }
 
     /// Get the data for a specific codebook.
-    #[profiling::function]
     pub fn codebook(&self, index: usize) -> Result<&'a [u8]> {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
         let first_offset = self
             .offsets
             .get(index)
@@ -167,8 +173,10 @@ impl<'a> CodebookLibrary<'a> {
     }
 
     /// Get the amount of quant values that should be parsed.
-    #[profiling::function]
     pub fn quantvals(entries: u32, dimensions: u32) -> u32 {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
         let bits = log2(entries) as u32;
         let mut vals = entries >> ((bits - 1) * (dimensions - 1) / dimensions);
 

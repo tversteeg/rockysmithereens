@@ -5,7 +5,6 @@ use clap::Parser;
 use rockysmithereens_parser::SongFile;
 use rodio::{OutputStream, Source};
 
-
 /// Command line arguments.
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None, propagate_version = true)]

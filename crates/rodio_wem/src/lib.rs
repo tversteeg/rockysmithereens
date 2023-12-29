@@ -7,6 +7,7 @@ pub use error::WemError;
 
 use std::{
     io::Write,
+    sync::{Arc, RwLock},
     time::{Duration, Instant},
     vec::IntoIter,
 };
@@ -37,6 +38,11 @@ use crate::{
     utils::{log2, read, read_bool, read_write, read_write_bool, write},
 };
 
+/// Interval in seconds at which the elapsed data will be written.
+///
+/// Lower numbers means more accurate timing but also less performance.
+const ELAPSED_WRITE_INTERVAL: f64 = 1.0;
+
 /// Decoder for an Wem file.
 #[derive(Clone)]
 pub struct WemDecoder {
@@ -60,14 +66,20 @@ pub struct WemDecoder {
     current_data: IntoIter<i16>,
     /// Whether we are done with this song.
     done: bool,
-    /// Exact time when the music started playing.
-    started: Instant,
+    /// Position of the player and when it's taken, updated every write interval.
+    elapsed: Arc<RwLock<(Duration, Instant)>>,
+    /// Time added to elapsed, updated every frame, reset every write interval.
+    elapsed_frame: f64,
+    /// How long in seconds a single frame takes.
+    sample_time: f64,
 }
 
 impl WemDecoder {
     /// Attempts to decode the data as a wwise file containing vorbis.
-    #[profiling::function]
     pub fn new(bytes: &[u8]) -> Result<WemDecoder> {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
         let WemParser {
             comment_header,
             ident_header,
@@ -87,6 +99,12 @@ impl WemDecoder {
 
         let previous_window = PreviousWindowRight::new();
 
+        // No time has elapsed yet
+        let elapsed = Arc::new(RwLock::new((Duration::default(), Instant::now())));
+
+        // How long each sample takes
+        let sample_time = ((fmt.sample_rate * fmt.channels as u32) as f64).recip();
+
         let mut this = Self {
             fmt,
             previous_window,
@@ -97,7 +115,9 @@ impl WemDecoder {
             current_data: Vec::new().into_iter(),
             done: false,
             current_packet: 0,
-            started: Instant::now(),
+            elapsed,
+            elapsed_frame: 0.0,
+            sample_time,
         };
 
         // The first read initializes lewton
@@ -109,13 +129,35 @@ impl WemDecoder {
     }
 
     /// Get the raw vorbis info.
+    #[must_use]
     pub fn into_raw(self) -> (HeaderSet, Vec<Packet>) {
         ((self.ident, self.comment, self.setup), self.packets)
     }
 
+    /// Calculate how long the song will play.
+    pub fn total_duration(&self) -> Result<Duration> {
+        // Calculate the total amount of samples
+        let mut samples_total = 0;
+        for packet in self.packets.iter() {
+            samples_total +=
+                lewton::audio::get_decoded_sample_count(&self.ident, &self.setup, &packet.data)?;
+        }
+
+        // Calculate the total duration from the total amount of samples
+        Ok(Duration::from_secs_f64(
+            samples_total as f64 * self.sample_time,
+        ))
+    }
+
+    /// Reference to a lock holding how long the file is playing.
+    #[must_use]
+    pub fn elapsed_ref(&self) -> Arc<RwLock<(Duration, Instant)>> {
+        self.elapsed.clone()
+    }
+
     /// Read a packet.
-    #[profiling::function]
     fn read_packet(&mut self) -> Result<()> {
+        // Read the new samples from the audio packet
         let audio: InterleavedSamples<_> = lewton::audio::read_audio_packet_generic(
             &self.ident,
             &self.setup,
@@ -132,11 +174,6 @@ impl WemDecoder {
         self.done = self.current_packet == self.packets.len();
 
         Ok(())
-    }
-
-    /// How long this audio has been playing.
-    pub fn elapsed(&self) -> Duration {
-        self.started.elapsed()
     }
 }
 
@@ -175,15 +212,35 @@ impl Iterator for WemDecoder {
 
     #[inline]
     fn next(&mut self) -> Option<i16> {
-        if self.done {
-            None
-        } else if let Some(sample) = self.current_data.next() {
-            Some(sample)
-        } else {
-            self.read_packet()
-                .ok()
-                .and_then(|_| self.current_data.next())
-        }
+        // Read the next packet, if applicable
+        self.current_data.next().or_else(|| {
+            // Current data frame ended, do the extra checks
+
+            // Update the public facing elapsed time every write interval, this is not done every packet because it's slow
+            self.elapsed_frame += self.sample_time;
+            if self.elapsed_frame >= ELAPSED_WRITE_INTERVAL {
+                // If we can't get the lock try again next frame
+                if let Ok(mut elapsed) = self.elapsed.try_write() {
+                    // Set te snapshot time
+                    elapsed.1 = Instant::now();
+                    // Set the elapsed time
+                    elapsed.0 += Duration::from_secs_f64(self.elapsed_frame);
+
+                    // Reset the frame time
+                    self.elapsed_frame = 0.0;
+                }
+            }
+
+            if self.done {
+                return None;
+            }
+
+            // Disregard the possible error
+            let _ = self.read_packet();
+
+            // Next packet should be available
+            self.current_data.next()
+        })
     }
 
     #[inline]
@@ -213,8 +270,10 @@ pub struct WemParser {
 
 impl WemParser {
     /// Attempts to decode the data as a wwise file containing vorbis.
-    #[profiling::function]
     pub fn new(bytes: &[u8]) -> Result<Self> {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
         // Get the endianness
         let (i, endianness) = parse_endianness_by_header(bytes)?;
 
@@ -275,8 +334,10 @@ pub struct Fmt {
 
 impl Fmt {
     /// Create a fake vorbis identification header packet.
-    #[profiling::function]
     pub fn to_ident_packet(&self) -> Result<Vec<u8>> {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
         let mut bytes = Vec::with_capacity(30);
 
         // The packet type (ident header)
@@ -319,11 +380,13 @@ pub enum Chunk {
 
 impl Chunk {
     /// Parse with nom the bytes for this chunk.
-    #[profiling::function]
     pub fn parse<'a>(
         i: &'a [u8],
         endianness: Endianness,
     ) -> IResult<&'a [u8], Self, VerboseError<&'a [u8]>> {
+        #[cfg(feature = "profiling")]
+        puffin::profile_function!();
+
         // Get the chunk type string
         let (i, chunk_type_bytes) = context("chunk type", take(4usize))(i)?;
         let chunk_type: &[u8; 4] = chunk_type_bytes
@@ -389,10 +452,12 @@ impl ChunkList for Vec<Chunk> {
 /// Parse header to get the endianness of the file.
 ///
 /// `true` means it's little endian.
-#[profiling::function]
 fn parse_endianness_by_header<'a>(
     i: &'a [u8],
 ) -> IResult<&'a [u8], Endianness, VerboseError<&'a [u8]>> {
+    #[cfg(feature = "profiling")]
+    puffin::profile_function!();
+
     let (i, header) = context("RIFF/RIFX header", alt((tag("RIFF"), tag("RIFX"))))(i)?;
 
     Ok((
@@ -406,11 +471,13 @@ fn parse_endianness_by_header<'a>(
 }
 
 /// Parse chunks.
-#[profiling::function]
 fn parse_chunks<'a>(
     i: &'a [u8],
     endianness: Endianness,
 ) -> IResult<&'a [u8], Vec<Chunk>, VerboseError<&'a [u8]>> {
+    #[cfg(feature = "profiling")]
+    puffin::profile_function!();
+
     let mut chunks = Vec::new();
 
     // Keep track of the chunks by way of the reported sizes
@@ -429,12 +496,14 @@ fn parse_chunks<'a>(
 }
 
 /// Parse the fmt chunk.
-#[profiling::function]
 fn parse_fmt_chunk<'a>(
     data: &'a [u8],
     endianness: Endianness,
     size: u32,
 ) -> IResult<&'a [u8], Chunk, VerboseError<&'a [u8]>> {
+    #[cfg(feature = "profiling")]
+    puffin::profile_function!();
+
     // Read a constant we will ignore
     let (i, _) = context("fmt chunk codec id", tag(b"\xFF\xFF"))(data)?;
 
@@ -487,8 +556,10 @@ fn parse_fmt_chunk<'a>(
 }
 
 /// Create a fake vorbis comment header packet.
-#[profiling::function]
 pub fn empty_comment_packet() -> Result<Vec<u8>> {
+    #[cfg(feature = "profiling")]
+    puffin::profile_function!();
+
     let mut bytes = Vec::new();
 
     // The packet type (comment header)
@@ -518,12 +589,14 @@ pub fn empty_comment_packet() -> Result<Vec<u8>> {
 /// Create a fake vorbis setup header packet.
 ///
 /// Also returns `mode_blockflag` and `mode_bits`.
-#[profiling::function]
 pub fn create_setup_packet(
     endianness: Endianness,
     fmt: &Fmt,
     data: &[u8],
 ) -> Result<(Vec<u8>, Vec<bool>, u32)> {
+    #[cfg(feature = "profiling")]
+    puffin::profile_function!();
+
     let mut bytes = BitVec::<_, Lsb0>::new();
 
     // The packet type (setup header)
