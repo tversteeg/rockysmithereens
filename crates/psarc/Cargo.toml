@@ -11,7 +11,7 @@ aes = "0.8.1"
 cfb-mode = "0.8.1"
 hex-literal = "0.3.4"
 flate2 = "1.0.24"
-log = "0.4.17"
+log = "0.4.21"
 profiling = { version = "1.0.6", optional = true }
 
 [features]
