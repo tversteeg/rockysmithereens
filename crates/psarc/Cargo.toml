@@ -10,7 +10,7 @@ thiserror = "1.0.32"
 aes = "0.8.1"
 cfb-mode = "0.8.1"
 hex-literal = "0.3.4"
-flate2 = "1.0.24"
+flate2 = "1.0.30"
 log = "0.4.17"
 profiling = { version = "1.0.6", optional = true }
 
